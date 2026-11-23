@@ -57,7 +57,8 @@ Todas as figuras são geradas em PT (`figures/`) e EN (`figures/en/`).
 - **Código:** `notebooks/projeto.ipynb`.
 - **Apresentação (lightning talk, 14 slides):** `apresentacao/apresentacao_pt.html` e `apresentacao/apresentacao_en.html`.
   São arquivos únicos: abra no navegador e navegue com as setas ou os pontos à direita. O roteiro de fala está em
-  `apresentacao/roteiro_pt.md` (e `.txt`, e as versões `_en`). Para regenerar depois de mudar resultados ou textos,
+  `apresentacao/roteiro_pt.md` (e `.txt`, e as versões `_en`). O guia `apresentacao/guia_explicacao_pt.md` explica,
+  slide a slide, cada termo e métrica, o valor no projeto e o que ele implica. Para regenerar depois de mudar resultados ou textos,
   edite `slides_<lang>.body.html` e rode `python apresentacao/build.py`.
 - **Artigo (IEEE):** `artigo/pt/main.tex` e `artigo/en/main.tex`. As tabelas (`tab_*.tex`) e as figuras saem de
   `results/` via `python artigo/gerar_tabelas.py`. Para compilar no Overleaf, compacte a pasta `artigo/pt` (ou
