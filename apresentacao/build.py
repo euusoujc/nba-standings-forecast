@@ -56,6 +56,37 @@ EXTRA_CSS = """
     .player-card figcaption b { display: block; color: var(--text); font-size: 12px; }
     .player-card figcaption .accent-text { font-weight: 700; }
     .proj-slide .wide-frame img { max-height: 54vh; }
+
+    /* fundo com foto: zoom leve ao passar o mouse */
+    .slide-bg { transition: transform 1.4s cubic-bezier(.2,.7,.2,1); will-change: transform; }
+    .slide:hover .slide-bg { transform: scale(1.045); }
+    .slide-bg.photo-right { left: 38%; background-position: center 18%;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 42%);
+      mask-image: linear-gradient(90deg, transparent 0%, #000 42%); }
+    .slide-bg.photo-right::after {
+      background: linear-gradient(90deg, rgba(28,27,32,0.55) 0%, rgba(28,27,32,0.10) 60%, rgba(28,27,32,0.25) 100%),
+                  linear-gradient(0deg, rgba(28,27,32,0.85) 0%, transparent 30%); }
+    /* projeção: uma foto de cada lado, uma por conferência */
+    .side-photo { position: absolute; top: 0; bottom: 0; width: 17vw; z-index: 0; overflow: hidden; }
+    .side-photo.left { left: 0; }
+    .side-photo.right { right: 0; }
+    .side-photo .slide-bg { background-position: center 22%; }
+    .side-photo.left { -webkit-mask-image: linear-gradient(90deg, #000 55%, transparent 100%);
+      mask-image: linear-gradient(90deg, #000 55%, transparent 100%); }
+    .side-photo.right { -webkit-mask-image: linear-gradient(270deg, #000 55%, transparent 100%);
+      mask-image: linear-gradient(270deg, #000 55%, transparent 100%); }
+    .side-photo .slide-bg::after {
+      background: linear-gradient(0deg, rgba(28,27,32,0.92) 0%, rgba(28,27,32,0.25) 45%, rgba(28,27,32,0.15) 100%); }
+    .side-label { position: absolute; left: 20px; right: 20px; bottom: 48px; z-index: 1;
+      font-family: "JetBrains Mono", monospace; font-size: 11px; line-height: 1.45; color: var(--text-soft); }
+    .side-photo.right .side-label { text-align: right; }
+    .side-label .conf { display: block; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 4px; }
+    .side-label b { display: block; color: var(--text); font-size: 15px; }
+    .proj-slide .slide-inner { padding-left: calc(17vw + 28px); padding-right: calc(17vw + 28px); }
+    @media (prefers-reduced-motion: reduce) {
+      .slide-bg { transition: none; }
+      .slide:hover .slide-bg { transform: none; }
+    }
     .q-split { display: flex; align-items: center; justify-content: space-between; gap: 48px; }
     .q-split > div { flex: 1; min-width: 0; }
     .statement span { white-space: nowrap; }
@@ -88,6 +119,15 @@ def inline_assets(html: str) -> str:
         print(f"  aviso: {name} não está em apresentacao/img/; card removido")
         return ""
     html = re.sub(r'[ \t]*<figure class="player-card[^"]*">.*?</figure>\n?', drop_missing, html, flags=re.S)
+
+    # blocos <!--opt:arquivo--> ... <!--/opt--> só entram se o arquivo existir
+    def opt_block(m):
+        name = m.group(1)
+        if (imgdir / name).exists():
+            return m.group(2)
+        print(f"  aviso: {name} não está em apresentacao/img/; bloco removido")
+        return ""
+    html = re.sub(r"[ \t]*<!--opt:([\w\-.]+)-->\n?(.*?)[ \t]*<!--/opt-->\n?", opt_block, html, flags=re.S)
 
     def repl(m):
         f = imgdir / m.group(1)
