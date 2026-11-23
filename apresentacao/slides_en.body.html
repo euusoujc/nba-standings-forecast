@@ -1,8 +1,10 @@
     <!-- 01 Title -->
     <section class="slide title-slide">
+      <div class="slide-bg" role="img" aria-label="NBA players" style="background-image: url('ASSET:atletas.jpg')"></div>
       <div class="slide-inner">
         <div class="slide-counter">01 / 14</div>
         <div class="hero">
+          <img class="nba-logo animate delay-1" src="ASSET:nba_logo.png" alt="NBA logo" />
           <div class="hero-badge animate delay-1">NBA 2026-27 · AFTER 15 GAMES</div>
           <h1 class="animate delay-2">15 games <span class="accent-text">are not</span> a season</h1>
           <p class="subtitle animate delay-3">
@@ -10,6 +12,7 @@
           </p>
           <div class="eyebrow mono animate delay-4">JULIO CESAR SALVINO · LUCAS AMORIM DE SOUZA · MACHINE LEARNING · UFABC 2026.3</div>
         </div>
+        <p class="credit">NBA logo and player photos: © NBA / NBA Properties, Inc. and their photographers. Academic use, non-commercial.</p>
       </div>
     </section>
 
@@ -17,11 +20,19 @@
     <section class="slide quote-slide">
       <div class="slide-inner">
         <div class="slide-counter">02 / 14</div>
-        <div class="eyebrow mono animate delay-1">THE QUESTION</div>
-        <blockquote class="statement animate delay-2">
-          Philadelphia is <span class="accent-text">14-3</span>. Good team or <span class="accent-2-text">lucky</span>?
-        </blockquote>
-        <div class="quote-meta mono animate delay-3">Each team's final win % and P(top 6 · play-in · out), by conference</div>
+        <div class="q-split">
+          <div>
+            <div class="eyebrow mono animate delay-1">THE QUESTION</div>
+            <blockquote class="statement animate delay-2">
+              Philadelphia is <span class="accent-text">14-3</span>. Good team or <span class="accent-2-text">lucky</span>?
+            </blockquote>
+            <div class="quote-meta mono animate delay-3">Each team's final win % and P(top 6 · play-in · out), by conference</div>
+          </div>
+          <figure class="player-card tall animate delay-3">
+            <img src="ASSET:lebron_76ers.jpg" alt="LeBron James of the Philadelphia 76ers" />
+            <figcaption><b>LeBron James</b>Philadelphia 76ers · 14 wins, 3 losses</figcaption>
+          </figure>
+        </div>
       </div>
     </section>
 
@@ -268,16 +279,33 @@
     </section>
 
     <!-- 12 Heatmap -->
-    <section class="slide screenshot-slide">
+    <section class="slide screenshot-slide proj-slide">
       <div class="slide-inner">
         <div class="slide-counter">12 / 14</div>
-        <div class="section-heading compact">
-          <div class="eyebrow mono animate delay-1">2026-27 PROJECTION</div>
-          <h2 class="animate delay-2 wide">BOS <span class="accent-text">97%</span> and SAS <span class="accent-text">95%</span> for top 6. PHI is 14-3 but projects to 52 wins.</h2>
+        <div class="proj-head">
+          <div class="section-heading compact">
+            <div class="eyebrow mono animate delay-1">2026-27 PROJECTION</div>
+            <h2 class="animate delay-2 wide">BOS <span class="accent-text">97%</span> and SAS <span class="accent-text">95%</span> for top 6. PHI is 14-3 but projects to 52 wins.</h2>
+          </div>
+          <div class="players animate delay-3">
+            <figure class="player-card">
+              <img src="ASSET:tatum_celtics.jpg" alt="Jayson Tatum of the Boston Celtics" />
+              <figcaption><b>Jayson Tatum</b>Boston Celtics<br>top 6: <span class="accent-text">97%</span></figcaption>
+            </figure>
+            <figure class="player-card">
+              <img src="ASSET:wembanyama_spurs.jpg" alt="Victor Wembanyama of the San Antonio Spurs" />
+              <figcaption><b>Victor Wembanyama</b>San Antonio Spurs<br>top 6: <span class="accent-text">95%</span></figcaption>
+            </figure>
+            <figure class="player-card">
+              <img src="ASSET:lebron_76ers.jpg" alt="LeBron James of the Philadelphia 76ers" />
+              <figcaption><b>LeBron James</b>Philadelphia 76ers<br>top 6: <span class="accent-text">90%</span></figcaption>
+            </figure>
+          </div>
         </div>
         <figure class="screenshot-frame wide-frame animate delay-3">
           <img src="IMG:heatmap_posicoes.png" alt="Probability of each final conference position" />
         </figure>
+        <p class="credit">NBA logo and player photos: © NBA / NBA Properties, Inc. and their photographers. Academic use, non-commercial.</p>
       </div>
     </section>
 
@@ -317,6 +345,7 @@
       <div class="slide-inner">
         <div class="slide-counter">14 / 14</div>
         <div class="closing-content">
+          <img class="nba-logo small animate delay-1" src="ASSET:nba_logo.png" alt="NBA logo" />
           <div class="eyebrow mono animate delay-1">TAKEAWAY</div>
           <h2 class="animate delay-2">Trust the record, but <span class="accent-text">shrink</span> it first</h2>
           <p class="subtitle animate delay-3">
@@ -328,5 +357,6 @@
           </div>
           <p class="footnote mono animate delay-5">Code and text built with help from Claude (Anthropic, Opus model) · full statement in the paper</p>
         </div>
+        <p class="credit">NBA logo and player photos: © NBA / NBA Properties, Inc. and their photographers. Academic use, non-commercial.</p>
       </div>
     </section>
