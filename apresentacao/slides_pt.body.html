@@ -1,0 +1,313 @@
+    <!-- 01 Título -->
+    <section class="slide title-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">01 / 13</div>
+        <div class="hero">
+          <div class="hero-badge animate delay-1">NBA 2026-27 · APÓS 15 JOGOS</div>
+          <h1 class="animate delay-2">15 jogos <span class="accent-text">não são</span> uma temporada</h1>
+          <p class="subtitle animate delay-3">
+            Prevendo a classificação final e as chances de top 6 / play-in com Ridge e Monte Carlo.
+          </p>
+          <div class="eyebrow mono animate delay-4">[NOMES DOS AUTORES] · APRENDIZADO DE MÁQUINA · UFABC 2026.3</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 Pergunta -->
+    <section class="slide quote-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">02 / 13</div>
+        <div class="eyebrow mono animate delay-1">A PERGUNTA</div>
+        <blockquote class="statement animate delay-2">
+          Um começo <span class="accent-text">14-3</span> é real ou só <span class="accent-2-text">ruído</span>?
+        </blockquote>
+        <div class="quote-meta mono animate delay-3">Prever o aproveitamento final e P(top 6 · play-in · fora) por conferência</div>
+      </div>
+    </section>
+
+    <!-- 03 Dados -->
+    <section class="slide diagram-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">03 / 13</div>
+        <div class="section-heading">
+          <div class="eyebrow mono animate delay-1">DADOS</div>
+          <h2 class="animate delay-2">16 temporadas, <span class="accent-text">480</span> times-temporada</h2>
+        </div>
+        <div class="diagram">
+          <div class="diagram-node animate delay-1">
+            <div class="card-label">NBA_API</div>
+            <h3>Game logs</h3>
+            <p>LeagueGameLog de 2010-11 a 2026-27, mais o calendário restante.</p>
+          </div>
+          <div class="diagram-node animate delay-2">
+            <div class="card-label">PRIMEIROS N = 15</div>
+            <h3>Features</h3>
+            <p>Aproveitamento, saldo, net rating, Pythagorean, tabela, temporada anterior.</p>
+          </div>
+          <div class="diagram-node animate delay-3">
+            <div class="card-label">ALVO</div>
+            <h3>Aproveitamento final</h3>
+            <p>Não vitórias: três temporadas tiveram menos de 82 jogos.</p>
+          </div>
+          <div class="diagram-node node-accent animate delay-4">
+            <div class="card-label">SEM VAZAMENTO</div>
+            <h3>Corte no jogo N</h3>
+            <p>Nada após o 15º jogo do time entra numa feature.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 Regressão à média -->
+    <section class="slide screenshot-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">04 / 13</div>
+        <div class="split">
+          <div class="section-heading compact">
+            <div class="eyebrow mono animate delay-1">IDEIA CENTRAL</div>
+            <h2 class="animate delay-2">O começo <span class="accent-text">regride</span></h2>
+            <p class="animate delay-3">Cada ponto acima de 0,500 após 15 jogos vale só <b class="hl">63%</b> no fim da temporada.</p>
+          </div>
+          <figure class="screenshot-frame animate delay-3">
+            <img src="IMG:regressao_a_media.png" alt="Aproveitamento final x aproveitamento após 15 jogos" />
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 Modelos -->
+    <section class="slide feature-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">05 / 13</div>
+        <div class="section-heading">
+          <div class="eyebrow mono animate delay-1">O QUE TESTAMOS</div>
+          <h2 class="animate delay-2">Dois baselines, <span class="accent-text">quatro</span> modelos</h2>
+        </div>
+        <div class="feature-grid cols-3">
+          <article class="feature-card muted-card animate delay-1">
+            <div class="feature-tag mono">BASELINE</div>
+            <h3>Mantém aproveitamento</h3>
+            <p>Supõe que a campanha atual se mantém até o fim.</p>
+          </article>
+          <article class="feature-card muted-card animate delay-2">
+            <div class="feature-tag mono">BASELINE</div>
+            <h3>Pythagorean</h3>
+            <p>PF¹⁴ / (PF¹⁴ + PA¹⁴): pontos preveem vitórias.</p>
+          </article>
+          <article class="feature-card animate delay-3">
+            <div class="feature-tag mono">LINEAR</div>
+            <h3>OLS</h3>
+            <p>Mínimos quadrados sobre seis features padronizadas.</p>
+          </article>
+          <article class="feature-card card--accent animate delay-3">
+            <div class="feature-tag mono">L2 · ESCOLHIDO</div>
+            <h3>Ridge</h3>
+            <p>Encolhe coeficientes; controla features colineares de pontos.</p>
+          </article>
+          <article class="feature-card animate delay-4">
+            <div class="feature-tag mono">L1</div>
+            <h3>Lasso</h3>
+            <p>Alternativa esparsa; descarta features redundantes.</p>
+          </article>
+          <article class="feature-card animate delay-5">
+            <div class="feature-tag mono">ENSEMBLE</div>
+            <h3>Random Forest</h3>
+            <p>Checagem não linear: 500 árvores, folha mínima 10.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 Validação -->
+    <section class="slide steps-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">06 / 13</div>
+        <div class="section-heading">
+          <div class="eyebrow mono animate delay-1">VALIDAÇÃO</div>
+          <h2 class="animate delay-2">A temporada é a unidade de <span class="accent-text">honestidade</span></h2>
+        </div>
+        <ol class="steps-list">
+          <li class="step animate delay-1">
+            <div class="step-num mono">01</div>
+            <div class="step-copy"><h3>Leave-one-season-out</h3><p>Treina em 15 temporadas, testa na que ficou de fora; 16 dobras.</p></div>
+          </li>
+          <li class="step animate delay-2">
+            <div class="step-num mono">02</div>
+            <div class="step-copy"><h3>Holdout temporal</h3><p>Treino 2010-22, teste 2023-26: o modelo envelhece bem?</p></div>
+          </li>
+          <li class="step animate delay-3">
+            <div class="step-num mono">03</div>
+            <div class="step-copy"><h3>Busca aninhada de α</h3><p>GroupKFold interno por temporada; regra de 1 erro-padrão escolhe α.</p></div>
+          </li>
+          <li class="step animate delay-4">
+            <div class="step-num mono">04</div>
+            <div class="step-copy"><h3>Duas métricas</h3><p>MAE em vitórias (escala 82) e Spearman da classificação.</p></div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 07 Resultados -->
+    <section class="slide stats-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">07 / 13</div>
+        <div class="section-heading">
+          <div class="eyebrow mono animate delay-1">RESULTADOS · LOSO</div>
+          <h2 class="animate delay-2">Duas vitórias de erro <span class="accent-text">a menos</span></h2>
+        </div>
+        <div class="stats-grid cols-3">
+          <div class="stat-card muted-card animate delay-1">
+            <div class="stat-value dim">7,60</div>
+            <div class="stat-label mono">MAE BASELINE (VITÓRIAS)</div>
+            <p>Mantendo o aproveitamento atual.</p>
+          </div>
+          <div class="stat-card card--accent animate delay-2">
+            <div class="stat-value accent-text">5,62</div>
+            <div class="stat-label mono">MAE RIDGE (VITÓRIAS)</div>
+            <p>Holdout 2023-26: 5,35 vitórias.</p>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value">0,78</div>
+            <div class="stat-label mono">SPEARMAN, POSIÇÕES</div>
+            <p>contra 0,74 do baseline.</p>
+          </div>
+        </div>
+        <p class="footnote mono animate delay-4">OLS 5,50 · Lasso 5,68 · RF 5,72 — todos dentro de 1 erro-padrão (0,25 vitória)</p>
+      </div>
+    </section>
+
+    <!-- 08 Por que Ridge -->
+    <section class="slide screenshot-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">08 / 13</div>
+        <div class="split">
+          <div class="section-heading compact">
+            <div class="eyebrow mono animate delay-1">POR QUE RIDGE</div>
+            <h2 class="animate delay-2">Mesmo erro, coeficientes <span class="accent-text">sensatos</span></h2>
+            <p class="animate delay-3">Saldo e net rating têm correlação de <b class="hl">0,999</b>. O OLS dá +0,16 e −0,18; o Ridge divide o peso por igual.</p>
+          </div>
+          <figure class="screenshot-frame animate delay-3">
+            <img src="IMG:coeficientes_ridge.png" alt="Coeficientes padronizados Ridge x OLS" />
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 Simulação -->
+    <section class="slide diagram-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">09 / 13</div>
+        <div class="section-heading">
+          <div class="eyebrow mono animate delay-1">DO APROVEITAMENTO ÀS CHANCES</div>
+          <h2 class="animate delay-2">Simular o resto, <span class="accent-text">10.000</span> vezes</h2>
+        </div>
+        <div class="diagram">
+          <div class="diagram-node animate delay-1">
+            <div class="card-label">RATING</div>
+            <h3>Previsão do Ridge</h3>
+            <p>Aproveitamento final previsto mais ruído, σ = 0,085.</p>
+          </div>
+          <div class="diagram-node animate delay-2">
+            <div class="card-label">MODELO DE JOGO</div>
+            <h3>Regressão logística</h3>
+            <p>Diferença de rating + mando; mandante vence 57,9% entre iguais.</p>
+          </div>
+          <div class="diagram-node animate delay-3">
+            <div class="card-label">MONTE CARLO</div>
+            <h3>952 jogos restantes</h3>
+            <p>Mais 2 jogos da NBA Cup ainda não marcados por time.</p>
+          </div>
+          <div class="diagram-node node-accent animate delay-4">
+            <div class="card-label">SAÍDA</div>
+            <h3>Probabilidades</h3>
+            <p>Vitórias esperadas, intervalo de 80%, top 6 / play-in / fora.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 Backtest -->
+    <section class="slide stats-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">10 / 13</div>
+        <div class="section-heading">
+          <div class="eyebrow mono animate delay-1">BACKTEST · 16 TEMPORADAS, FORA DA AMOSTRA</div>
+          <h2 class="animate delay-2">As chances são <span class="accent-text">calibradas</span></h2>
+        </div>
+        <div class="stats-grid cols-2">
+          <div class="stat-card card--accent animate delay-1">
+            <div class="stat-value accent-text">81%</div>
+            <div class="stat-label mono">COBERTURA DO INTERVALO DE 80%</div>
+            <p>As vitórias reais caíram no intervalo em 81% dos casos.</p>
+          </div>
+          <div class="stat-card animate delay-2">
+            <div class="stat-value">0,42</div>
+            <div class="stat-label mono">BRIER SCORE (3 CLASSES)</div>
+            <p>contra 0,66 de chances constantes 6/15 · 4/15 · 5/15.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11 Heatmap -->
+    <section class="slide screenshot-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">11 / 13</div>
+        <div class="section-heading compact">
+          <div class="eyebrow mono animate delay-1">PROJEÇÃO 2026-27</div>
+          <h2 class="animate delay-2 wide">BOS <span class="accent-text">97%</span> e SAS <span class="accent-text">95%</span> de top 6. PHI está 14-3, projeção de 52 vitórias.</h2>
+        </div>
+        <figure class="screenshot-frame wide-frame animate delay-3">
+          <img src="IMG:heatmap_posicoes.png" alt="Probabilidade de cada posição final por conferência" />
+        </figure>
+      </div>
+    </section>
+
+    <!-- 12 Lições -->
+    <section class="slide comparison-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">12 / 13</div>
+        <div class="section-heading">
+          <div class="eyebrow mono animate delay-1">OLHANDO PARA TRÁS</div>
+          <h2 class="animate delay-2">O que funcionou, o que <span class="accent-text">mudaríamos</span></h2>
+        </div>
+        <div class="comparison-grid">
+          <div class="comparison-col accent animate delay-1">
+            <h3>Funcionou</h3>
+            <ul>
+              <li>CV agrupada por temporada, sem vazamento</li>
+              <li>Modelo linear simples venceu a floresta</li>
+              <li>Testar a simulação, não confiar nela</li>
+              <li>Ganho maior no começo: 13,3 → 7,2 com N = 5</li>
+            </ul>
+          </div>
+          <div class="comparison-col muted animate delay-2">
+            <h3>Próxima vez</h3>
+            <ul>
+              <li>Modelar lesões, trocas e elenco</li>
+              <li>Atualizar o rating a cada jogo</li>
+              <li>Desempates oficiais da NBA, não aleatórios</li>
+              <li>Priors por jogador (ponderados por minutos)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13 Encerramento -->
+    <section class="slide closing-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">13 / 13</div>
+        <div class="closing-content">
+          <div class="eyebrow mono animate delay-1">MENSAGEM FINAL</div>
+          <h2 class="animate delay-2">Confie na campanha, mas <span class="accent-text">encolha</span> antes</h2>
+          <p class="subtitle animate delay-3">
+            Regressão regularizada e simulação transformam 15 jogos ruidosos em chances calibradas.
+          </p>
+          <div class="cta-row animate delay-4">
+            <span class="btn btn-primary">notebooks/projeto.ipynb</span>
+            <span class="btn btn-secondary">Obrigado · Perguntas?</span>
+          </div>
+        </div>
+      </div>
+    </section>

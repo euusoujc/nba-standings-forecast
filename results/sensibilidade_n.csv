@@ -1,0 +1,15 @@
+N,modelo,MAE,Spearman
+5,Baseline: aproveitamento atual,13.295,0.492
+5,Ridge,7.179,0.655
+10,Baseline: aproveitamento atual,9.091,0.67
+10,Ridge,6.247,0.728
+15,Baseline: aproveitamento atual,7.597,0.743
+15,Ridge,5.62,0.784
+20,Baseline: aproveitamento atual,6.64,0.771
+20,Ridge,5.341,0.808
+25,Baseline: aproveitamento atual,6.152,0.801
+25,Ridge,4.936,0.816
+30,Baseline: aproveitamento atual,5.31,0.845
+30,Ridge,4.607,0.855
+41,Baseline: aproveitamento atual,3.941,0.904
+41,Ridge,3.598,0.902

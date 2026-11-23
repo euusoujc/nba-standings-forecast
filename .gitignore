@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+
+# Configuração local do editor/agente
+.claude/
+
+# Pacotes gerados para o Overleaf (recrie com Compress-Archive a partir de artigo/en e artigo/pt)
+artigo/*.zip
+
+# LaTeX (se compilar localmente)
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Sistema
+desktop.ini
+Thumbs.db
+.DS_Store

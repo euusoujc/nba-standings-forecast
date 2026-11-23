@@ -1,0 +1,7 @@
+modelo,MAE (vitórias/82) LOSO,Spearman conf. LOSO,MAE (vitórias/82) holdout,Spearman conf. holdout
+Regressão Linear,5.501,0.785,5.216,0.867
+Ridge,5.62,0.784,5.346,0.864
+Lasso,5.676,0.788,5.453,0.877
+Random Forest,5.718,0.779,5.425,0.816
+Baseline: Pythagorean,6.826,0.749,6.133,0.819
+Baseline: aproveitamento atual,7.597,0.743,6.926,0.817

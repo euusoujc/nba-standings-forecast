@@ -1,0 +1,82 @@
+# Speaker script — lightning talk (5 min)
+
+Target pace: ~140 words per minute (~650 words in total). The time in parentheses is the slide's duration; the time
+on the right is cumulative. **Bold** = what to stress. If you run late, shorten slides 5 and 6, which are the easiest
+to summarize.
+
+---
+
+### Slide 1 — Title (10 s) · 0:10
+"Good afternoon. Our project is called **fifteen games are not a season**: how to forecast the final NBA standings
+when the season has barely started."
+
+### Slide 2 — The question (15 s) · 0:25
+"Right now Philadelphia is **14 and 3**. Is that a contender, or just a hot streak? Our question: with about 15 games
+played, what will each team's final win percentage be, and what are its odds of finishing top 6, in the play-in, or
+out?"
+
+### Slide 3 — Data (20 s) · 0:45
+"We used nba_api to download **16 seasons**, 480 team-seasons. For each one we computed six features using **only the
+first 15 games**: win percentage, point differential, net rating, Pythagorean expectation, strength of schedule and
+last season's record. The target is final win percentage, not wins, because some seasons had fewer than 82 games."
+
+### Slide 4 — Regression to the mean (30 s) · 1:15
+"This plot is the core idea. On the x-axis, win percentage after 15 games; on the y-axis, the final one. If early
+records were reliable, the points would sit on the diagonal. But the red line has a slope of **0.63**: every point
+above .500 early on is worth only 63% at the end. Early records **regress to the mean**, so a good model has to shrink
+extreme starts."
+
+### Slide 5 — What we tried (20 s) · 1:35
+"We compared two baselines, keeping the current win percentage and the Pythagorean formula, against four models:
+linear regression, **Ridge**, Lasso and random forest, all with standardization inside the pipeline."
+
+### Slide 6 — Validation (20 s) · 1:55
+"Our unit of validation is the **season**: we hold out one full season at a time, and we also test on the three most
+recent ones. Ridge's alpha is chosen by nested cross-validation, also grouped by season."
+
+### Slide 7 — Results (25 s) · 2:20
+"The result: keeping the current win percentage misses by **7.6 wins** on average. Ridge misses by **5.6**. That's two
+wins of error gone, and the ranking improves too. To be honest, all four models tied within one standard error. What
+matters is shrinking the early record, not the algorithm."
+
+### Slide 8 — Why Ridge (25 s) · 2:45
+"So why Ridge? Point differential and net rating correlate at **0.999**. Linear regression gives one +0.16 and the
+other −0.18, which makes no sense. Ridge splits the weight evenly. **Same error, coefficients we can interpret**:
+that's the multicollinearity problem from class."
+
+### Slide 9 — Simulation (25 s) · 3:10
+"To get probabilities, we use Ridge's forecast as each team's rating. A logistic regression gives the win probability
+for every game from the rating gap and home court. Then we simulate the **952 remaining games ten thousand times**,
+with uncertainty in the ratings."
+
+### Slide 10 — Backtest (20 s) · 3:30
+"But a simulation is only worth something if it's calibrated. We replayed the 16 past seasons, out of sample. The 80%
+interval was right **81%** of the time, and the Brier score dropped from 0.66 to 0.42. The probabilities can be
+trusted."
+
+### Slide 11 — 2026-27 projection (30 s) · 4:00
+"And this is today's projection. Boston has a **97%** chance of a top-6 finish, San Antonio **95%**. And Philadelphia
+at 14 and 3? It projects to 52 wins, because its point differential is modest. The model keeps the hype in check."
+
+### Slide 12 — Lessons (25 s) · 4:25
+"What worked: validating by season, with no leakage, and testing the simulation instead of trusting it. The gain is
+largest very early: after 5 games, the error is cut almost in half. Next time, we'd model injuries and trades, update
+ratings game by game, and use the official tiebreakers."
+
+### Slide 13 — Closing (15 s) · 4:40
+"To sum up: **trust the record, but shrink it first**. Regularized regression plus simulation turns 15 noisy games into
+calibrated odds. The code is in the notebook. Thank you!"
+
+*(~20 s of slack for questions or delays.)*
+
+---
+
+## Likely questions (short answers)
+
+- **Why not a neural network or something more complex?** With 480 observations and an almost linear relationship,
+  the random forest already gave no gain. More complexity would only add variance.
+- **Why Ridge if OLS had a lower MAE?** The gap (0.12 wins) is smaller than the between-season standard error (0.25).
+  We picked the most stable model with the one-standard-error rule.
+- **What about injuries?** They're not in the model; that's the main limitation. Ratings come from results only.
+- **Why 15 games?** It's the fewest games any team has played today. The sensitivity analysis covers N = 5 to 41.
+- **Are the tiebreakers real?** No, they're random. Official NBA tiebreakers are future work.

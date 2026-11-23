@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Presentation Template</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #1C1B20;
+      --bg-soft: #23222A;
+      --surface: #2A2933;
+      --surface-2: #312F3D;
+      --text: #F5F7FB;
+      --text-soft: #B8BCC8;
+      --line: rgba(255,255,255,0.10);
+
+      --accent: #28C2C4;
+      --accent-2: #B0AFFA;
+      --accent-3: #7BE7E8;
+
+      --success: #6EE7B7;
+      --warning: #F6C177;
+      --danger: #FF7B9C;
+
+      --shadow-soft: 0 10px 30px rgba(0,0,0,0.25);
+      --shadow-glow: 0 0 0 1px rgba(40,194,196,0.16), 0 0 32px rgba(40,194,196,0.12);
+
+      --radius-sm: 12px;
+      --radius-md: 20px;
+      --radius-lg: 24px;
+      --radius-xl: 28px;
+
+      --fs-display: clamp(56px, 7vw, 96px);
+      --fs-h1: clamp(40px, 5vw, 72px);
+      --fs-h2: clamp(28px, 3.6vw, 48px);
+      --fs-h3: clamp(22px, 2.4vw, 32px);
+      --fs-body-lg: clamp(18px, 1.5vw, 24px);
+      --fs-body: 18px;
+      --fs-small: 14px;
+      --fs-mono: 13px;
+
+      --container-pad-y: 56px;
+      --container-pad-x: 64px;
+      --content-max: 1280px;
+
+      --anim-duration: 0.7s;
+      --anim-ease: ease;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(176,175,250,0.10), transparent 30%),
+        radial-gradient(circle at 80% 30%, rgba(40,194,196,0.10), transparent 28%),
+        linear-gradient(180deg, #1C1B20 0%, #17161B 100%);
+      color: var(--text);
+      font-family: "Chakra Petch", sans-serif;
+      overflow-x: hidden;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .presentation {
+      position: relative;
+    }
+
+    .slide {
+      position: relative;
+      min-height: 100vh;
+      width: 100%;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      display: grid;
+      place-items: stretch;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(circle at center, black 45%, transparent 100%);
+      opacity: 0.25;
+      z-index: 0;
+    }
+
+    .slide-inner {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      width: min(100%, calc(var(--content-max) + (var(--container-pad-x) * 2)));
+      margin: 0 auto;
+      padding: var(--container-pad-y) var(--container-pad-x);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 28px;
+    }
+
+    .slide-counter {
+      position: absolute;
+      top: 28px;
+      right: 32px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: var(--fs-mono);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+      z-index: 3;
+    }
+
+    .mono {
+      font-family: "JetBrains Mono", monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      font-size: var(--fs-mono);
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      max-width: 760px;
+      font-size: var(--fs-body-lg);
+      line-height: 1.4;
+      color: var(--text-soft);
+      margin: 0;
+    }
+
+    h1, h2, h3, p, blockquote, ul, ol {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: var(--fs-display);
+      line-height: 0.94;
+      letter-spacing: -0.03em;
+      max-width: 12ch;
+    }
+
+    h2 {
+      font-size: var(--fs-h2);
+      line-height: 1.04;
+      letter-spacing: -0.025em;
+      max-width: 18ch;
+    }
+
+    h3 {
+      font-size: var(--fs-h3);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    p, li {
+      font-size: var(--fs-body);
+      line-height: 1.45;
+      color: var(--text-soft);
+    }
+
+    .accent-text {
+      color: var(--accent);
+      text-shadow: 0 0 24px rgba(40,194,196,0.18);
+    }
+
+    .accent-2-text {
+      color: var(--accent-2);
+    }
+
+    .section-heading {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 820px;
+    }
+
+    .section-heading.compact {
+      gap: 6px;
+    }
+
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 980px;
+    }
+
+    .hero-badge {
+      align-self: flex-start;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(40,194,196,0.25);
+      background: rgba(40,194,196,0.08);
+      box-shadow: var(--shadow-glow);
+      color: var(--text);
+      font-size: var(--fs-mono);
+      font-family: "JetBrains Mono", monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .card-grid,
+    .feature-grid,
+    .stats-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .cols-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card,
+    .feature-card,
+    .stat-card,
+    .comparison-col,
+    .faq-item {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(8px);
+    }
+
+    .card,
+    .feature-card,
+    .faq-item {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card-label,
+    .feature-tag,
+    .stat-label {
+      font-family: "JetBrains Mono", monospace;
+      font-size: var(--fs-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .comparison-col {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-height: 340px;
+    }
+
+    .comparison-col.accent {
+      border-color: rgba(40,194,196,0.3);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .comparison-col.muted {
+      opacity: 0.9;
+    }
+
+    .comparison-col ul,
+    .faq-list,
+    .steps-list {
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .comparison-col li + li,
+    .faq-item + .faq-item {
+      margin-top: 12px;
+    }
+
+    .statement {
+      max-width: 14ch;
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 1.04;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .quote-meta {
+      color: var(--text-soft);
+      margin-top: 12px;
+    }
+
+    .tree {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 900px;
+    }
+
+    .tree-node {
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      box-shadow: var(--shadow-soft);
+      width: fit-content;
+    }
+
+    .tree-node.root {
+      border-color: rgba(40,194,196,0.3);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .tree-children {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      padding-left: 24px;
+    }
+
+    .tree-branch {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tree-note {
+      color: var(--text-soft);
+      font-size: var(--fs-mono);
+    }
+
+    .diagram {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .diagram-node {
+      padding: 22px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+
+    .diagram-node:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -14px;
+      width: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(40,194,196,0.3), rgba(176,175,250,0.3));
+    }
+
+    .stat-block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: center;
+      min-height: 60vh;
+    }
+
+    .stat-value {
+      font-size: clamp(72px, 11vw, 180px);
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+      color: var(--text);
+      text-shadow: 0 0 28px rgba(40,194,196,0.08);
+    }
+
+    .stats-grid .stat-card {
+      padding: 28px 24px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 18px;
+      align-items: start;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .step-num {
+      color: var(--accent);
+      font-size: clamp(18px, 2vw, 24px);
+      padding-top: 6px;
+    }
+
+    .step-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 740px;
+    }
+
+    .screenshot-frame {
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .screenshot-frame img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+    }
+
+    .screenshot-caption {
+      margin-top: 16px;
+      color: var(--text-soft);
+      font-size: var(--fs-mono);
+    }
+
+    .closing-content,
+    .divider-content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 900px;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-3));
+      color: #081012;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.03);
+      border-color: rgba(255,255,255,0.12);
+      color: var(--text);
+    }
+
+    .timeline {
+      display: grid;
+      gap: 18px;
+      max-width: 900px;
+    }
+
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .timeline-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 0 6px rgba(40,194,196,0.08);
+      margin-top: 8px;
+    }
+
+    .timeline-copy {
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .animate {
+      opacity: 0;
+      transform: translateY(18px);
+      transition:
+        opacity var(--anim-duration) var(--anim-ease),
+        transform var(--anim-duration) var(--anim-ease);
+      will-change: opacity, transform;
+    }
+
+    .animate.in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .delay-1 { transition-delay: 80ms; }
+    .delay-2 { transition-delay: 160ms; }
+    .delay-3 { transition-delay: 240ms; }
+    .delay-4 { transition-delay: 320ms; }
+    .delay-5 { transition-delay: 400ms; }
+
+    .dot-nav {
+      position: fixed;
+      top: 50%;
+      right: 18px;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 100;
+    }
+
+    .dot-nav button {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: none;
+      padding: 0;
+      background: rgba(255,255,255,0.22);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .dot-nav button.active {
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(40,194,196,0.12);
+      transform: scale(1.12);
+    }
+
+    .dot-nav button:hover {
+      transform: scale(1.08);
+    }
+
+    @media (max-width: 1100px) {
+      :root {
+        --container-pad-y: 44px;
+        --container-pad-x: 36px;
+      }
+
+      .cols-3,
+      .cols-4,
+      .diagram,
+      .faq-list,
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .diagram-node:not(:last-child)::after {
+        top: auto;
+        right: auto;
+        bottom: -10px;
+        left: 50%;
+        width: 1px;
+        height: 20px;
+        transform: translateX(-50%);
+      }
+    }
+
+    @media (max-width: 720px) {
+      :root {
+        --container-pad-y: 28px;
+        --container-pad-x: 20px;
+        --fs-body: 16px;
+        --fs-small: 13px;
+      }
+
+      .slide-counter {
+        top: 16px;
+        right: 20px;
+      }
+
+      .dot-nav {
+        right: 10px;
+      }
+
+      .step {
+        grid-template-columns: 56px 1fr;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .cta-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="dot-nav" aria-label="Slide navigation"></nav>
+
+  <main class="presentation">
+
+    <!-- Slide 1 -->
+    <section class="slide title-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">01 / 05</div>
+
+        <div class="hero">
+          <div class="hero-badge animate delay-1">HTML PRESENTATION</div>
+          <div class="eyebrow mono animate delay-2">PREMIUM SLIDE SYSTEM</div>
+          <h1 class="animate delay-3">
+            Build <span class="accent-text">polished decks</span> in one HTML file
+          </h1>
+          <p class="subtitle animate delay-4">
+            A base template with scroll-snap, slide counters, keyboard navigation, dot navigation, and staggered animations.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2 -->
+    <section class="slide grid-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">02 / 05</div>
+
+        <div class="section-heading">
+          <div class="eyebrow mono animate delay-1">WHAT'S INCLUDED</div>
+          <h2 class="animate delay-2">The essential presentation engine</h2>
+        </div>
+
+        <div class="card-grid cols-3">
+          <article class="card animate delay-1">
+            <div class="card-label">01</div>
+            <h3>Scroll-snap slides</h3>
+            <p>Each slide fits a full viewport and snaps cleanly on scroll.</p>
+          </article>
+
+          <article class="card animate delay-2">
+            <div class="card-label">02</div>
+            <h3>Auto dot nav</h3>
+            <p>Right-side dots are generated from the number of slides.</p>
+          </article>
+
+          <article class="card animate delay-3">
+            <div class="card-label">03</div>
+            <h3>Keyboard controls</h3>
+            <p>Arrow keys move between slides without extra setup.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3 -->
+    <section class="slide comparison-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">03 / 05</div>
+
+        <div class="section-heading">
+          <div class="eyebrow mono animate delay-1">WHY IT HELPS</div>
+          <h2 class="animate delay-2">From messy decks to structured presentations</h2>
+        </div>
+
+        <div class="comparison-grid">
+          <div class="comparison-col muted animate delay-1">
+            <h3>Without structure</h3>
+            <ul>
+              <li>Repeated HTML decisions</li>
+              <li>Content overflow problems</li>
+              <li>Weak visual consistency</li>
+              <li>Slow presentation assembly</li>
+            </ul>
+          </div>
+
+          <div class="comparison-col accent animate delay-2">
+            <h3>With this template</h3>
+            <ul>
+              <li>Reusable slide shell</li>
+              <li>Built-in motion patterns</li>
+              <li>Strong dark-tech foundation</li>
+              <li>Faster, cleaner output</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4 -->
+    <section class="slide stats-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">04 / 05</div>
+
+        <div class="section-heading">
+          <div class="eyebrow mono animate delay-1">SYSTEM RULE</div>
+          <h2 class="animate delay-2">Every slide fits one viewport</h2>
+        </div>
+
+        <div class="stat-block">
+          <div class="stat-label animate delay-2">LAYOUT CONSTRAINT</div>
+          <div class="stat-value animate delay-3">100vh</div>
+          <p class="subtitle animate delay-4">
+            If content does not fit, split it into another slide. Never allow internal slide scrolling.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5 -->
+    <section class="slide closing-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">05 / 05</div>
+
+        <div class="closing-content">
+          <div class="eyebrow mono animate delay-1">NEXT STEP</div>
+          <h2 class="animate delay-2">Replace the sample content and build your deck</h2>
+          <p class="subtitle animate delay-3">
+            Use this template with your `design-system.md` and `slide-templates.md` references to generate consistent presentations.
+          </p>
+
+          <div class="cta-row animate delay-4">
+            <a href="#" class="btn btn-primary">Primary CTA</a>
+            <a href="#" class="btn btn-secondary">Secondary Link</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const dotsContainer = document.querySelector('.dot-nav');
+
+    function scrollToSlide(index) {
+      const clamped = Math.max(0, Math.min(index, slides.length - 1));
+      slides[clamped].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function buildDots() {
+      slides.forEach((slide, index) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('aria-label', `Go to slide ${index + 1}`);
+        btn.addEventListener('click', () => scrollToSlide(index));
+        dotsContainer.appendChild(btn);
+      });
+    }
+
+    function setActiveDot(index) {
+      const dots = dotsContainer.querySelectorAll('button');
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+      });
+    }
+
+    const slideObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const index = slides.indexOf(entry.target);
+          setActiveDot(index);
+        }
+      });
+    }, {
+      threshold: 0.6
+    });
+
+    const animationObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          animationObserver.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.2
+    });
+
+    function initObservers() {
+      slides.forEach(slide => slideObserver.observe(slide));
+      document.querySelectorAll('.animate').forEach(el => animationObserver.observe(el));
+    }
+
+    function getCurrentSlideIndex() {
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+
+      slides.forEach((slide, index) => {
+        const rect = slide.getBoundingClientRect();
+        const distance = Math.abs(rect.top);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      return closestIndex;
+    }
+
+    document.addEventListener('keydown', (event) => {
+      const currentIndex = getCurrentSlideIndex();
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowRight' || event.key === 'PageDown') {
+        event.preventDefault();
+        scrollToSlide(currentIndex + 1);
+      }
+
+      if (event.key === 'ArrowUp' || event.key === 'ArrowLeft' || event.key === 'PageUp') {
+        event.preventDefault();
+        scrollToSlide(currentIndex - 1);
+      }
+
+      if (event.key === 'Home') {
+        event.preventDefault();
+        scrollToSlide(0);
+      }
+
+      if (event.key === 'End') {
+        event.preventDefault();
+        scrollToSlide(slides.length - 1);
+      }
+    });
+
+    buildDots();
+    initObservers();
+    setActiveDot(0);
+  </script>
+</body>
+</html>
