@@ -121,6 +121,14 @@ def summarize_sims(teams, conf, wins, pos, total_games):
 
 
 # ------------------------------------------------------------ backtest
+def cutoff_date(g: pd.DataFrame, n: int):
+    """Data em que o último time completou n jogos (coluna k = índice do jogo do time).
+    Com n = 0 (pré-temporada), a véspera do primeiro jogo."""
+    if n == 0:
+        return g["GAME_DATE"].min() - pd.Timedelta(days=1)
+    return g.loc[g.k == n, "GAME_DATE"].max()
+
+
 def backtest(games, loso, pred_col, train, n, n_sims=2000):
     """Simula cada temporada histórica como se estivéssemos no dia em que o último
     time completou N jogos (mesma situação de 2026-27) e compara com o real.
@@ -132,7 +140,7 @@ def backtest(games, loso, pred_col, train, n, n_sims=2000):
     for season, sl in loso.groupby("SEASON"):
         g = games[games.SEASON == season].sort_values(["TEAM", "GAME_DATE", "GAME_ID"]).copy()
         g["k"] = g.groupby("TEAM").cumcount() + 1
-        cut = g.loc[g.k == n, "GAME_DATE"].max()          # data de corte
+        cut = cutoff_date(g, n)                           # data de corte
         teams = sl.TEAM.to_numpy()
         tix = {t: i for i, t in enumerate(teams)}
         known = g[g.GAME_DATE <= cut]
