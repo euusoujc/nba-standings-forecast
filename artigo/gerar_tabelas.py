@@ -30,7 +30,8 @@ FEAT = {
 }
 FIGS = ["regressao_a_media.png", "correlacao_features.png", "previsto_vs_real.png",
         "sensibilidade_n.png", "calibracao_simulacao.png", "heatmap_posicoes.png",
-        "coeficientes_ridge.png", "probabilidades_top6_playin.png"]
+        "coeficientes_ridge.png", "probabilidades_top6_playin.png",
+        "versoes_trajetoria.png", "versoes_backtest.png"]
 
 
 def num(x, d, lang):
@@ -83,11 +84,25 @@ def tab_proj(lang):
     return "\n".join(f"{a} & {b} \\\\" for a, b in zip(*halves))
 
 
+def tab_versions(lang):
+    df = pd.read_csv(RES / "versoes_resumo.csv")
+    rows = []
+    for _, r in df.iterrows():
+        cut = pd.Timestamp(r.data_corte)
+        date = cut.strftime("%d/%m") if lang == "pt" else cut.strftime("%b %d").replace(" 0", " ")
+        rows.append(f"{r.versao} & {date} & {r.jogos_no_corte.replace('-', '--')} & "
+                    f"{num(r.MAE_LOSO_baseline, 2, lang)} & {num(r.MAE_LOSO_ridge, 2, lang)} & "
+                    f"{num(r.sigma, 3, lang)} & {num(r.brier_backtest, 3, lang)} & "
+                    f"{num(100 * r.cobertura_ic80, 1, lang)}\\% & {num(r.MAE_backtest_vitorias, 2, lang)} \\\\")
+    return "\n".join(rows)
+
+
 def main():
     for lang in ["en", "pt"]:
         out = HERE / lang
         (out / "figures").mkdir(parents=True, exist_ok=True)
-        for name, fn in [("models", tab_models), ("coefs", tab_coefs), ("sens", tab_sens), ("proj", tab_proj)]:
+        for name, fn in [("models", tab_models), ("coefs", tab_coefs), ("sens", tab_sens), ("proj", tab_proj),
+                         ("versions", tab_versions)]:
             (out / f"tab_{name}.tex").write_text(fn(lang) + "\n", encoding="utf-8")
         src = ROOT / "figures" / ("en" if lang == "en" else "")
         for f in FIGS:

@@ -1,14 +1,14 @@
     <!-- 01 Title -->
     <section class="slide title-slide">
       <div class="slide-inner">
-        <div class="slide-counter">01 / 13</div>
+        <div class="slide-counter">01 / 14</div>
         <div class="hero">
           <div class="hero-badge animate delay-1">NBA 2026-27 · AFTER 15 GAMES</div>
-          <h1 class="animate delay-2">15 games are <span class="accent-text">not a season</span></h1>
+          <h1 class="animate delay-2">15 games <span class="accent-text">are not</span> a season</h1>
           <p class="subtitle animate delay-3">
-            Forecasting final standings and top-6 / play-in odds with Ridge regression and Monte Carlo.
+            Final standings and top-6 / play-in odds with Ridge and Monte Carlo.
           </p>
-          <div class="eyebrow mono animate delay-4">[AUTHOR NAMES] · MACHINE LEARNING · UFABC 2026.3</div>
+          <div class="eyebrow mono animate delay-4">[AUTHOR 1 NAME] · LUCAS AMORIM DE SOUZA · MACHINE LEARNING · UFABC 2026.3</div>
         </div>
       </div>
     </section>
@@ -16,19 +16,19 @@
     <!-- 02 Question -->
     <section class="slide quote-slide">
       <div class="slide-inner">
-        <div class="slide-counter">02 / 13</div>
+        <div class="slide-counter">02 / 14</div>
         <div class="eyebrow mono animate delay-1">THE QUESTION</div>
         <blockquote class="statement animate delay-2">
-          Is a <span class="accent-text">14-3</span> start real, or just <span class="accent-2-text">noise</span>?
+          Philadelphia is <span class="accent-text">14-3</span>. Good team or <span class="accent-2-text">lucky</span>?
         </blockquote>
-        <div class="quote-meta mono animate delay-3">Predict final win % and P(top 6 · play-in · out) per conference</div>
+        <div class="quote-meta mono animate delay-3">Each team's final win % and P(top 6 · play-in · out), by conference</div>
       </div>
     </section>
 
-    <!-- 03 Data pipeline -->
+    <!-- 03 Data -->
     <section class="slide diagram-slide">
       <div class="slide-inner">
-        <div class="slide-counter">03 / 13</div>
+        <div class="slide-counter">03 / 14</div>
         <div class="section-heading">
           <div class="eyebrow mono animate delay-1">DATA</div>
           <h2 class="animate delay-2">16 seasons, <span class="accent-text">480</span> team-seasons</h2>
@@ -37,7 +37,7 @@
           <div class="diagram-node animate delay-1">
             <div class="card-label">NBA_API</div>
             <h3>Game logs</h3>
-            <p>LeagueGameLog 2010-11 to 2026-27, plus the remaining schedule.</p>
+            <p>Games from 2010-11 to 2026-27, plus the remaining schedule.</p>
           </div>
           <div class="diagram-node animate delay-2">
             <div class="card-label">FIRST N = 15</div>
@@ -47,12 +47,12 @@
           <div class="diagram-node animate delay-3">
             <div class="card-label">TARGET</div>
             <h3>Final win %</h3>
-            <p>Not raw wins: three seasons were shorter than 82 games.</p>
+            <p>Not wins: three seasons had fewer than 82 games.</p>
           </div>
           <div class="diagram-node node-accent animate delay-4">
             <div class="card-label">NO LEAKAGE</div>
             <h3>Cut at game N</h3>
-            <p>Nothing after a team's 15th game enters a feature.</p>
+            <p>Nothing after a team's 15th game goes into a feature.</p>
           </div>
         </div>
       </div>
@@ -61,12 +61,12 @@
     <!-- 04 Regression to the mean -->
     <section class="slide screenshot-slide">
       <div class="slide-inner">
-        <div class="slide-counter">04 / 13</div>
+        <div class="slide-counter">04 / 14</div>
         <div class="split">
           <div class="section-heading compact">
-            <div class="eyebrow mono animate delay-1">CORE INSIGHT</div>
+            <div class="eyebrow mono animate delay-1">CORE IDEA</div>
             <h2 class="animate delay-2">Early records <span class="accent-text">regress</span></h2>
-            <p class="animate delay-3">Every point above .500 after 15 games is worth only <b class="hl">63%</b> at season's end.</p>
+            <p class="animate delay-3">Each point above .500 after 15 games is worth only <b class="hl">63%</b> by the end of the season.</p>
           </div>
           <figure class="screenshot-frame animate delay-3">
             <img src="IMG:regressao_a_media.png" alt="Final win % vs win % after 15 games" />
@@ -75,19 +75,19 @@
       </div>
     </section>
 
-    <!-- 05 Models tried -->
+    <!-- 05 Models -->
     <section class="slide feature-slide">
       <div class="slide-inner">
-        <div class="slide-counter">05 / 13</div>
+        <div class="slide-counter">05 / 14</div>
         <div class="section-heading">
-          <div class="eyebrow mono animate delay-1">WHAT WE TRIED</div>
-          <h2 class="animate delay-2">Two baselines, <span class="accent-text">four</span> learners</h2>
+          <div class="eyebrow mono animate delay-1">WHAT WE TESTED</div>
+          <h2 class="animate delay-2">Two baselines, <span class="accent-text">four</span> models</h2>
         </div>
         <div class="feature-grid cols-3">
           <article class="feature-card muted-card animate delay-1">
             <div class="feature-tag mono">BASELINE</div>
             <h3>Keep win %</h3>
-            <p>Assume the current record holds all season.</p>
+            <p>Today's record holds until the end.</p>
           </article>
           <article class="feature-card muted-card animate delay-2">
             <div class="feature-tag mono">BASELINE</div>
@@ -102,17 +102,17 @@
           <article class="feature-card card--accent animate delay-3">
             <div class="feature-tag mono">L2 · CHOSEN</div>
             <h3>Ridge</h3>
-            <p>Shrinks coefficients; tames collinear point-based features.</p>
+            <p>Shrinks coefficients and keeps the point-based features, which move together, in check.</p>
           </article>
           <article class="feature-card animate delay-4">
             <div class="feature-tag mono">L1</div>
             <h3>Lasso</h3>
-            <p>Sparse alternative; drops redundant features.</p>
+            <p>Can zero out redundant features.</p>
           </article>
           <article class="feature-card animate delay-5">
-            <div class="feature-tag mono">ENSEMBLE</div>
+            <div class="feature-tag mono">TREES</div>
             <h3>Random Forest</h3>
-            <p>Non-linear check: 500 trees, min leaf 10.</p>
+            <p>Nonlinearity check: 500 trees, min leaf 10.</p>
           </article>
         </div>
       </div>
@@ -121,27 +121,27 @@
     <!-- 06 Validation -->
     <section class="slide steps-slide">
       <div class="slide-inner">
-        <div class="slide-counter">06 / 13</div>
+        <div class="slide-counter">06 / 14</div>
         <div class="section-heading">
           <div class="eyebrow mono animate delay-1">VALIDATION</div>
-          <h2 class="animate delay-2">Seasons are the unit of <span class="accent-text">honesty</span></h2>
+          <h2 class="animate delay-2">Leave a whole season <span class="accent-text">out</span> each time</h2>
         </div>
         <ol class="steps-list">
           <li class="step animate delay-1">
             <div class="step-num mono">01</div>
-            <div class="step-copy"><h3>Leave-one-season-out</h3><p>Train on 15 seasons, test on the held-out one; 16 folds.</p></div>
+            <div class="step-copy"><h3>Leave-one-season-out</h3><p>Train on 15 seasons, test on the one left out; 16 rounds.</p></div>
           </li>
           <li class="step animate delay-2">
             <div class="step-num mono">02</div>
-            <div class="step-copy"><h3>Temporal holdout</h3><p>Train 2010-22, test 2023-26: does it age well?</p></div>
+            <div class="step-copy"><h3>Temporal holdout</h3><p>Train 2010-22, test 2023-26. Does it hold up in recent years?</p></div>
           </li>
           <li class="step animate delay-3">
             <div class="step-num mono">03</div>
-            <div class="step-copy"><h3>Nested α search</h3><p>Inner GroupKFold by season; one-standard-error rule picks α.</p></div>
+            <div class="step-copy"><h3>Nested α search</h3><p>Inner CV also by season; the 1-standard-error rule picks α.</p></div>
           </li>
           <li class="step animate delay-4">
             <div class="step-num mono">04</div>
-            <div class="step-copy"><h3>Two metrics</h3><p>MAE in wins (82-game scale) and Spearman of conference ranks.</p></div>
+            <div class="step-copy"><h3>Two metrics</h3><p>Error in wins (82-game scale) and Spearman of the standings.</p></div>
           </li>
         </ol>
       </div>
@@ -150,44 +150,44 @@
     <!-- 07 Results -->
     <section class="slide stats-slide">
       <div class="slide-inner">
-        <div class="slide-counter">07 / 13</div>
+        <div class="slide-counter">07 / 14</div>
         <div class="section-heading">
           <div class="eyebrow mono animate delay-1">RESULTS · LOSO</div>
-          <h2 class="animate delay-2">Two wins of error, <span class="accent-text">gone</span></h2>
+          <h2 class="animate delay-2">Two wins of error <span class="accent-text">gone</span></h2>
         </div>
         <div class="stats-grid cols-3">
           <div class="stat-card muted-card animate delay-1">
             <div class="stat-value dim">7.60</div>
-            <div class="stat-label mono">BASELINE MAE (WINS)</div>
+            <div class="stat-label mono">BASELINE ERROR (WINS)</div>
             <p>Keeping the current win %.</p>
           </div>
           <div class="stat-card card--accent animate delay-2">
             <div class="stat-value accent-text">5.62</div>
-            <div class="stat-label mono">RIDGE MAE (WINS)</div>
-            <p>Holdout 2023-26: 5.35 wins.</p>
+            <div class="stat-label mono">RIDGE ERROR (WINS)</div>
+            <p>On the 2023-26 holdout: 5.35.</p>
           </div>
           <div class="stat-card animate delay-3">
             <div class="stat-value">0.78</div>
-            <div class="stat-label mono">SPEARMAN, RANKS</div>
-            <p>vs 0.74 for the baseline.</p>
+            <div class="stat-label mono">SPEARMAN, STANDINGS</div>
+            <p>The baseline gets 0.74.</p>
           </div>
         </div>
-        <p class="footnote mono animate delay-4">OLS 5.50 · Lasso 5.68 · RF 5.72 — all within one standard error (0.25 wins)</p>
+        <p class="footnote mono animate delay-4">OLS 5.50 · Lasso 5.68 · RF 5.72: tied within one standard error (0.25 wins)</p>
       </div>
     </section>
 
     <!-- 08 Why Ridge -->
     <section class="slide screenshot-slide">
       <div class="slide-inner">
-        <div class="slide-counter">08 / 13</div>
+        <div class="slide-counter">08 / 14</div>
         <div class="split">
           <div class="section-heading compact">
             <div class="eyebrow mono animate delay-1">WHY RIDGE</div>
-            <h2 class="animate delay-2">Same error, <span class="accent-text">sane</span> coefficients</h2>
-            <p class="animate delay-3">Point diff and net rating correlate at <b class="hl">0.999</b>. OLS gives them +0.16 and −0.18; Ridge splits the weight evenly.</p>
+            <h2 class="animate delay-2">Same error, coefficients that <span class="accent-text">make sense</span></h2>
+            <p class="animate delay-3">Point diff and net rating correlate at <b class="hl">0.999</b>. OLS gives one +0.16 and the other −0.18. Ridge splits the weight.</p>
           </div>
           <figure class="screenshot-frame animate delay-3">
-            <img src="IMG:coeficientes_ridge.png" alt="Ridge vs OLS standardized coefficients" />
+            <img src="IMG:coeficientes_ridge.png" alt="Standardized coefficients Ridge vs OLS" />
           </figure>
         </div>
       </div>
@@ -196,7 +196,7 @@
     <!-- 09 Simulation -->
     <section class="slide diagram-slide">
       <div class="slide-inner">
-        <div class="slide-counter">09 / 13</div>
+        <div class="slide-counter">09 / 14</div>
         <div class="section-heading">
           <div class="eyebrow mono animate delay-1">FROM WIN % TO ODDS</div>
           <h2 class="animate delay-2">Simulate the rest, <span class="accent-text">10,000</span> times</h2>
@@ -205,17 +205,17 @@
           <div class="diagram-node animate delay-1">
             <div class="card-label">RATING</div>
             <h3>Ridge forecast</h3>
-            <p>Predicted final win % plus noise, σ = 0.085.</p>
+            <p>Predicted final win %, with noise of σ = 0.085.</p>
           </div>
           <div class="diagram-node animate delay-2">
             <div class="card-label">GAME MODEL</div>
             <h3>Logistic regression</h3>
-            <p>Rating gap + home court; home team wins 57.9% at parity.</p>
+            <p>Rating gap + home court. Between equal teams, the home side wins 57.9%.</p>
           </div>
           <div class="diagram-node animate delay-3">
             <div class="card-label">MONTE CARLO</div>
             <h3>952 games left</h3>
-            <p>Plus 2 unscheduled NBA Cup games per team.</p>
+            <p>Plus 2 NBA Cup games per team, not yet scheduled.</p>
           </div>
           <div class="diagram-node node-accent animate delay-4">
             <div class="card-label">OUTPUT</div>
@@ -229,44 +229,62 @@
     <!-- 10 Backtest -->
     <section class="slide stats-slide">
       <div class="slide-inner">
-        <div class="slide-counter">10 / 13</div>
+        <div class="slide-counter">10 / 14</div>
         <div class="section-heading">
-          <div class="eyebrow mono animate delay-1">BACKTEST · 16 SEASONS, OUT-OF-SAMPLE</div>
-          <h2 class="animate delay-2">The odds are <span class="accent-text">calibrated</span></h2>
+          <div class="eyebrow mono animate delay-1">BACKTEST · 16 SEASONS, OUT OF SAMPLE</div>
+          <h2 class="animate delay-2">When it says 80%, <span class="accent-text">it hits 81%</span></h2>
         </div>
         <div class="stats-grid cols-2">
           <div class="stat-card card--accent animate delay-1">
             <div class="stat-value accent-text">81%</div>
-            <div class="stat-label mono">80% INTERVAL COVERAGE</div>
-            <p>Actual wins fell inside the interval 81% of the time.</p>
+            <div class="stat-label mono">COVERAGE OF THE 80% INTERVAL</div>
+            <p>Actual wins landed inside the interval 81% of the time.</p>
           </div>
           <div class="stat-card animate delay-2">
             <div class="stat-value">0.42</div>
             <div class="stat-label mono">BRIER SCORE (3 CLASSES)</div>
-            <p>vs 0.66 for constant 6/15 · 4/15 · 5/15 odds.</p>
+            <p>Fixed odds of 6/15 · 4/15 · 5/15 would score 0.66.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 11 Heatmap -->
+    <!-- 11 Versions -->
     <section class="slide screenshot-slide">
       <div class="slide-inner">
-        <div class="slide-counter">11 / 13</div>
+        <div class="slide-counter">11 / 14</div>
+        <div class="split">
+          <div class="section-heading compact">
+            <div class="eyebrow mono animate delay-1">V0 · V5 · V10 · V15</div>
+            <h2 class="animate delay-2">The same forecast, <span class="accent-text">four times</span></h2>
+            <p class="animate delay-3">We redid everything before opening night and after 5, 10 and 15 games. Backtest Brier: <b class="hl">0.53 → 0.49 → 0.44 → 0.42</b>. Error on final wins: 7.8 → 5.3.</p>
+            <p class="animate delay-4">Memphis went from 33 to 48 expected wins. Toronto rose and fell back.</p>
+          </div>
+          <figure class="screenshot-frame animate delay-3">
+            <img src="IMG:versoes_trajetoria.png" alt="Expected wins by forecast version" />
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 Heatmap -->
+    <section class="slide screenshot-slide">
+      <div class="slide-inner">
+        <div class="slide-counter">12 / 14</div>
         <div class="section-heading compact">
           <div class="eyebrow mono animate delay-1">2026-27 PROJECTION</div>
-          <h2 class="animate delay-2 wide">BOS <span class="accent-text">97%</span> and SAS <span class="accent-text">95%</span> top 6. PHI is 14-3, projected 52 wins.</h2>
+          <h2 class="animate delay-2 wide">BOS <span class="accent-text">97%</span> and SAS <span class="accent-text">95%</span> for top 6. PHI is 14-3 but projects to 52 wins.</h2>
         </div>
         <figure class="screenshot-frame wide-frame animate delay-3">
-          <img src="IMG:heatmap_posicoes.png" alt="Probability of each final position by conference" />
+          <img src="IMG:heatmap_posicoes.png" alt="Probability of each final conference position" />
         </figure>
       </div>
     </section>
 
-    <!-- 12 Lessons -->
+    <!-- 13 Lessons -->
     <section class="slide comparison-slide">
       <div class="slide-inner">
-        <div class="slide-counter">12 / 13</div>
+        <div class="slide-counter">13 / 14</div>
         <div class="section-heading">
           <div class="eyebrow mono animate delay-1">LOOKING BACK</div>
           <h2 class="animate delay-2">What worked, what we'd <span class="accent-text">change</span></h2>
@@ -275,39 +293,40 @@
           <div class="comparison-col accent animate delay-1">
             <h3>Worked</h3>
             <ul>
-              <li>Season-grouped CV, no leakage</li>
-              <li>Simple linear model beat forests</li>
-              <li>Backtesting the simulation, not trusting it</li>
-              <li>Gain is largest early: 13.3 → 7.2 at N = 5</li>
+              <li>Validating by season, no leakage</li>
+              <li>A simple linear model tied the forest</li>
+              <li>Testing the simulation on the past before trusting it</li>
+              <li>With 5 games the error already drops from 13.3 to 7.2</li>
             </ul>
           </div>
           <div class="comparison-col muted animate delay-2">
             <h3>Next time</h3>
             <ul>
-              <li>Model injuries, trades, roster changes</li>
-              <li>Update ratings game by game</li>
-              <li>Official NBA tiebreakers, not random</li>
-              <li>Player-level priors (e.g. minutes-weighted)</li>
+              <li>Model injuries, trades and roster changes</li>
+              <li>Keep going with 20, 25, 30-game versions</li>
+              <li>Update ratings after every game</li>
+              <li>Official NBA tiebreakers</li>
             </ul>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 13 Closing -->
+    <!-- 14 Closing -->
     <section class="slide closing-slide">
       <div class="slide-inner">
-        <div class="slide-counter">13 / 13</div>
+        <div class="slide-counter">14 / 14</div>
         <div class="closing-content">
           <div class="eyebrow mono animate delay-1">TAKEAWAY</div>
-          <h2 class="animate delay-2">Trust the record, but <span class="accent-text">shrink it</span> first</h2>
+          <h2 class="animate delay-2">Trust the record, but <span class="accent-text">shrink</span> it first</h2>
           <p class="subtitle animate delay-3">
-            Regularized regression plus simulation turns 15 noisy games into calibrated playoff odds.
+            It's a living project: the data come from the NBA's API, and rerunning it updates the projection.
           </p>
           <div class="cta-row animate delay-4">
             <span class="btn btn-primary">notebooks/projeto.ipynb</span>
             <span class="btn btn-secondary">Thank you · Questions?</span>
           </div>
+          <p class="footnote mono animate delay-5">Code and text built with help from Claude (Anthropic, Opus model) · full statement in the paper</p>
         </div>
       </div>
     </section>

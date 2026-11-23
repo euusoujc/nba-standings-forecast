@@ -1,81 +1,85 @@
 # Roteiro de fala — lightning talk (5 min)
 
-Ritmo-alvo: ~130 palavras por minuto (~650 palavras no total). O tempo entre parênteses é a duração do slide; o tempo
+Ritmo-alvo: ~140 palavras por minuto (~640 palavras no total). O tempo entre parênteses é a duração do slide; o tempo
 à direita é o acumulado. **Negrito** = o que vale enfatizar. Se estiver atrasado, encurte os slides 5 e 6, que são os
 mais fáceis de resumir.
 
 ---
 
 ### Slide 1 — Título (10 s) · 0:10
-"Boa tarde. Nosso projeto se chama **quinze jogos não são uma temporada**: como prever a classificação final da NBA
+"Boa tarde. O nosso projeto se chama **quinze jogos não são uma temporada**. A ideia é prever como a NBA vai terminar
 quando a temporada mal começou."
 
 ### Slide 2 — A pergunta (15 s) · 0:25
-"Hoje o Philadelphia está **14 a 3**. Isso é um time candidato ou só uma boa fase? A pergunta é: com uns 15 jogos,
-qual vai ser o aproveitamento final de cada time, e qual a chance de terminar no top 6, no play-in ou fora?"
+"O Philadelphia está **14 a 3**. Isso é time bom ou sorte? Com uns 15 jogos, a gente quer saber quantas vitórias cada
+time vai ter no fim e qual a chance de ele ficar no top 6, no play-in ou fora."
 
 ### Slide 3 — Dados (20 s) · 0:45
-"Usamos a nba_api para baixar **16 temporadas**, 480 times-temporada. Para cada uma, calculamos seis features usando
-**só os 15 primeiros jogos**: aproveitamento, saldo de pontos, net rating, Pythagorean, força de tabela e temporada
-anterior. O alvo é o aproveitamento final, não vitórias, porque algumas temporadas tiveram menos de 82 jogos."
+"Puxamos tudo da API da NBA: **16 temporadas** de jogos, 480 times-temporada. Para
+cada time, calculamos seis números usando **só os 15 primeiros jogos**: aproveitamento, saldo de pontos, net rating,
+Pythagorean, força da tabela e a temporada anterior."
 
-### Slide 4 — Regressão à média (30 s) · 1:15
-"Este gráfico é a ideia central. No eixo x, o aproveitamento depois de 15 jogos; no y, o final. Se o começo fosse
-confiável, os pontos estariam na diagonal. Mas a reta vermelha tem inclinação **0,63**: cada ponto acima de 0,500 no
-começo vale só 63% no fim. Ou seja, o começo **regride à média**, e um bom modelo precisa encolher essas campanhas
-extremas."
+### Slide 4 — Regressão à média (25 s) · 1:10
+"Esse gráfico é o centro do trabalho. No eixo x, o aproveitamento depois de 15 jogos; no y, o do fim da temporada. Se
+o começo dissesse tudo, os pontos estariam na diagonal. Não estão: a inclinação é **0,63**. Cada ponto acima de 0,500
+no começo vale só 63% no fim. O começo **regride à média**, e o modelo tem que puxar essas campanhas de volta."
 
-### Slide 5 — O que testamos (20 s) · 1:35
-"Comparamos dois baselines: manter o aproveitamento atual e a fórmula Pythagorean. E quatro modelos: regressão linear,
-**Ridge**, Lasso e Random Forest, todos com padronização dentro do pipeline."
+### Slide 5 — O que testamos (15 s) · 1:25
+"Comparamos dois baselines, manter o aproveitamento atual e a fórmula Pythagorean, com quatro modelos: regressão
+linear, **Ridge**, Lasso e Random Forest."
 
-### Slide 6 — Validação (20 s) · 1:55
-"A unidade de validação é a **temporada**: deixamos uma temporada inteira de fora por vez, e também testamos nas três
-mais recentes. O alpha do Ridge é escolhido por validação cruzada aninhada, também agrupada por temporada."
+### Slide 6 — Validação (15 s) · 1:40
+"Para não nos enganar, tiramos uma **temporada inteira** do treino por vez e testamos nela. Também testamos só nas três
+temporadas mais recentes. O alpha do Ridge sai de uma validação interna, também por temporada."
 
-### Slide 7 — Resultados (25 s) · 2:20
-"O resultado: manter o aproveitamento atual erra em média **7,6 vitórias**. O Ridge erra **5,6**. São duas vitórias
-de erro a menos, e a ordem da classificação também melhora. Detalhe honesto: os quatro modelos ficaram empatados
-dentro do erro-padrão. O que importa é encolher o começo, não o algoritmo."
+### Slide 7 — Resultados (20 s) · 2:00
+"Manter o aproveitamento atual erra, em média, **7,6 vitórias**. O Ridge erra **5,6**. São duas vitórias a menos. Os
+quatro modelos ficaram empatados dentro do erro-padrão, então o ganho vem de encolher o começo, não do algoritmo."
 
-### Slide 8 — Por que Ridge (25 s) · 2:45
-"Então por que o Ridge? Saldo de pontos e net rating têm correlação de **0,999**. A regressão linear dá +0,16 para um
-e −0,18 para o outro, o que não faz sentido. O Ridge divide o peso igualmente. **Mesmo erro, coeficientes que dá para
-interpretar**: é a multicolinearidade que vimos em aula."
+### Slide 8 — Por que Ridge (20 s) · 2:20
+"Por que o Ridge, então? Saldo de pontos e net rating têm correlação de **0,999**. A regressão linear dá +0,16 para um e
+−0,18 para o outro, o que não tem sentido nenhum. O Ridge divide o peso. **Mesmo erro, e dá para ler os coeficientes.**"
 
-### Slide 9 — Simulação (25 s) · 3:10
-"Para chegar às probabilidades, usamos a previsão do Ridge como rating de cada time. Uma regressão logística dá a
-chance de vitória em cada jogo, a partir da diferença de rating e do mando. Aí simulamos os **952 jogos restantes
-dez mil vezes**, com incerteza no rating."
+### Slide 9 — Simulação (20 s) · 2:40
+"Para chegar nas probabilidades, a previsão do Ridge vira o rating de cada time. Uma regressão logística dá a chance de
+vitória em cada jogo, pela diferença de rating e pelo mando. Aí simulamos os **952 jogos que faltam, dez mil vezes**."
 
-### Slide 10 — Backtest (20 s) · 3:30
-"Mas simulação só vale se for calibrada. Refizemos as 16 temporadas passadas, fora da amostra. O intervalo de 80%
-acertou **81%** das vezes, e o Brier score caiu de 0,66 para 0,42. As probabilidades são confiáveis."
+### Slide 10 — Backtest (15 s) · 2:55
+"E testamos isso nas 16 temporadas passadas, sem olhar o resultado. Quando o modelo diz 80%, ele acerta **81%** das
+vezes. Dá para confiar nas chances."
 
-### Slide 11 — Projeção 2026-27 (30 s) · 4:00
-"E esta é a projeção de hoje. Boston tem **97%** de chance de top 6, San Antonio **95%**. E o Philadelphia, que está
-14 a 3? A projeção é de 52 vitórias, porque o saldo de pontos dele é modesto. O modelo segura o entusiasmo."
+### Slide 11 — Versões (30 s) · 3:25
+"Depois refizemos a previsão **quatro vezes**: antes da estreia, com 5, com 10 e com 15 jogos. A cada cinco jogos o
+erro cai: de quase **8 vitórias** antes da estreia para **5,3** agora. E dá para ver times mudando de patamar. O
+Memphis saiu de 33 para 48 vitórias esperadas. O Toronto subiu para 49 e caiu de novo para 38. Por isso não dá para confiar numa foto só."
 
-### Slide 12 — Lições (25 s) · 4:25
-"O que funcionou: validar por temporada, sem vazamento, e testar a simulação em vez de confiar nela. O ganho é maior
-bem no começo: com 5 jogos, o erro cai quase pela metade. Na próxima vez, queremos modelar lesões e trocas, atualizar
-o rating a cada jogo e usar os critérios oficiais de desempate."
+### Slide 12 — Projeção 2026-27 (25 s) · 3:50
+"A projeção de hoje: Boston tem **97%** de chance de top 6, San Antonio **95%**. E o Philadelphia, com 14 a 3? A
+projeção é de 52 vitórias, porque o saldo de pontos dele é modesto."
 
-### Slide 13 — Encerramento (15 s) · 4:40
-"Resumindo: **confie na campanha, mas encolha antes**. Regressão regularizada e simulação transformam 15 jogos
-ruidosos em chances calibradas. O código está no notebook. Obrigado!"
+### Slide 13 — Lições (25 s) · 4:15
+"O que funcionou: validar por temporada e testar a simulação no passado antes de acreditar nela. Com só 5 jogos, o
+erro já cai quase pela metade. Para a próxima: modelar lesões e trocas, seguir com novas versões ao longo da
+temporada e usar os desempates oficiais."
 
-*(~20 s de folga para perguntas ou atrasos.)*
+### Slide 14 — Encerramento (20 s) · 4:35
+"Resumindo: **confie na campanha, mas encolha antes**. E o projeto é vivo: como os dados vêm da API da NBA, é só rodar
+de novo para atualizar. O código está no notebook. Obrigado!"
+
+*(~25 s de folga para perguntas ou atrasos.)*
 
 ---
 
 ## Perguntas prováveis (respostas curtas)
 
-- **Por que não usar uma rede neural ou algo mais complexo?** Com 480 observações e uma relação quase linear, a Random
-  Forest já não melhorou nada. Mais complexidade só aumentaria a variância.
-- **Por que o Ridge, se a regressão linear teve MAE menor?** A diferença (0,12 vitória) é menor que o erro-padrão entre
-  temporadas (0,25). Escolhemos o modelo mais estável, pela regra de um erro-padrão.
-- **E lesões?** Não estão no modelo; é a principal limitação. O rating vem só dos resultados.
-- **Por que 15 jogos?** É o menor número de jogos disputados por um time hoje. A análise de sensibilidade mostra o erro
-  de N = 5 até 41.
-- **O desempate é real?** Não, é aleatório. Os critérios oficiais da NBA ficaram como trabalho futuro.
+- **Por que não uma rede neural?** Com 480 observações e uma relação quase linear, nem a Random Forest melhorou. Mais
+  complexidade só aumentaria a variância.
+- **Por que o Ridge, se a regressão linear teve erro menor?** A diferença (0,12 vitória) é menor que o erro-padrão
+  entre temporadas (0,25). Escolhemos o modelo mais estável, pela regra de um erro-padrão.
+- **E lesões?** Não estão no modelo; é a principal limitação. O rating vem só dos resultados, como se todo
+  mundo seguisse com o elenco dos primeiros jogos.
+- **Por que 15 jogos?** É o menor número de jogos de um time hoje. As versões com 0, 5 e 10 jogos mostram o que acontece
+  antes disso.
+- **O desempate é real?** Não, é aleatório. Os critérios oficiais da NBA ficaram para depois.
+- **Vocês usaram IA?** Sim, o Claude (Anthropic, modelo Opus), pelo Claude Code, para escrever e revisar código e
+  texto. A declaração completa está no artigo.

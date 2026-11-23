@@ -20,6 +20,29 @@ def _md(df: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
+def versions_table() -> pd.DataFrame:
+    v = pd.read_csv(RESULTS / "versoes_resumo.csv")
+    return pd.DataFrame({
+        "Versão": v.versao, "Data de corte": v.data_corte, "Jogos no corte": v.jogos_no_corte,
+        "MAE LOSO baseline": v.MAE_LOSO_baseline.map(lambda x: f"{x:.2f}"),
+        "MAE LOSO Ridge": v.MAE_LOSO_ridge.map(lambda x: f"{x:.2f}"),
+        "σ": v.sigma.map(lambda x: f"{x:.3f}"),
+        "Brier backtest": v.brier_backtest.map(lambda x: f"{x:.3f}"),
+        "Cobertura IC80": v.cobertura_ic80.map(lambda x: f"{x:.1%}"),
+        "MAE backtest (vitórias)": v.MAE_backtest_vitorias.map(lambda x: f"{x:.2f}")})
+
+
+def versions_wins() -> pd.DataFrame:
+    lv = pd.read_csv(RESULTS / "versoes_2026-27.csv")
+    w = lv.pivot(index=["CONF", "TEAM"], columns="N", values="vitorias_esperadas").round(1)
+    p = lv.pivot(index=["CONF", "TEAM"], columns="N", values="P_top6")
+    first, last = w.columns.min(), w.columns.max()
+    w.columns = [f"V{c} (V esp.)" for c in w.columns]
+    w[f"P(top 6) V{first}→V{last}"] = [f"{a:.0%} → {b:.0%}" for a, b in zip(p[first], p[last])]
+    w = w.reset_index().sort_values(["CONF", f"V{last} (V esp.)"], ascending=[True, False])
+    return w.rename(columns={"CONF": "Conf.", "TEAM": "Time"})
+
+
 def build() -> str:
     comp = pd.read_csv(RESULTS / "comparacao_modelos.csv")
     coefs = pd.read_csv(RESULTS / "coeficientes_ridge.csv", index_col=0)
@@ -27,6 +50,9 @@ def build() -> str:
     bt = pd.read_csv(RESULTS / "backtest_simulacao.csv")
     best = (RESULTS / "melhor_modelo.txt").read_text(encoding="utf-8").strip()
     n = int(pd.read_csv(PROCESSED / "features_2026-27.csv").gp.iloc[0])
+    enc = pd.read_csv(RESULTS / "encolhimento.csv", index_col=0)["valor"]
+    slope = enc["inclinacao"]
+    ols = coefs["Linear (OLS)"]; rid = coefs["Ridge"]
 
     cover = ((bt.real_wins >= bt.IC80_inf) & (bt.real_wins <= bt.IC80_sup)).mean()
     base = comp.set_index("modelo").loc["Baseline: aproveitamento atual", "MAE (vitórias/82) LOSO"]
@@ -49,12 +75,13 @@ def build() -> str:
              "porque seus coeficientes são estáveis e interpretáveis.\n",
              "## 2. Coeficientes (features padronizadas)\n",
              _md(coefs.reset_index().rename(columns={"index": "feature"})), "",
-             "**Encolhimento:** após 15 jogos, cada ponto de aproveitamento acima de 0,500 "
-             "vale só ~63% no fim da temporada (inclinação 0,63 de final ~ aproveitamento). "
-             "A regressão já captura essa regressão à média (intercepto em 0,500). A penalidade "
+             f"**Encolhimento:** após {n} jogos, cada ponto de aproveitamento acima de 0,500 "
+             f"vale só ~{slope:.0%} no fim da temporada (inclinação {slope:.2f} de final ~ aproveitamento). "
+             "A regressão já captura essa regressão à média (intercepto perto de 0,500). A penalidade "
              "do Ridge também encolhe os coeficientes e divide o peso entre features quase "
              "colineares (saldo, net rating e Pythagorean têm correlação > 0,99): o OLS dá "
-             "+0,16/−0,18 a saldo/net rating, e o Ridge dá ~0,023 a cada uma.\n",
+             f"{ols['pd_pg']:+.2f}/{ols['net_rtg']:+.2f} a saldo/net rating, e o Ridge dá "
+             f"{rid['pd_pg']:.3f}/{rid['net_rtg']:.3f}.\n",
              "## 3. Projeção final 2026-27 (Monte Carlo, 10.000 simulações)\n"]
     for conf in ["Leste", "Oeste"]:
         d = sim[sim.CONF == conf].sort_values("posicao_media").copy()
@@ -70,7 +97,7 @@ def build() -> str:
     sens = pd.read_csv(RESULTS / "sensibilidade_n.csv")
     sp = sens.pivot(index="N", columns="modelo", values="MAE").round(2).reset_index()
     sp.columns = ["N", "Baseline (MAE)", "Ridge (MAE)"]
-    sp["N"] = sp["N"].astype(int)
+    sp["N"] = sp["N"].astype(int).astype(str)
     parts += ["**Modelo de jogo (regressão logística):** "
               f"b_diff = {mj.b_diff:.2f}, b_casa = {mj.b_casa:.2f} → P(mandante vence, times iguais) = "
               f"{mj.p_casa_times_iguais:.3f}; acurácia {mj.acuracia:.3f}, log-loss {mj.log_loss:.3f}; "
@@ -84,7 +111,12 @@ def build() -> str:
               _md(sp), "",
               "O ganho do modelo sobre o baseline é maior quando há poucos jogos (com N = 5, o erro cai quase pela metade) "
               "e diminui conforme o aproveitamento fica menos ruidoso.\n",
-              "## 5. Limitações\n",
+              "## 5. Versões com 0, 5, 10 e 15 jogos\n",
+              "Cada versão refaz o pipeline inteiro (features, Ridge, modelo de jogo, σ, backtest e Monte Carlo) "
+              "na data em que o último time completou N jogos. V0 é a pré-temporada (só a temporada anterior).\n",
+              _md(versions_table()), "",
+              _md(versions_wins()), "",
+              "## 6. Limitações\n",
               f"- **Poucos jogos:** com {n} jogos, o aproveitamento tem erro-padrão de ~0,13; mesmo o melhor "
               f"modelo erra em média ~{bm:.1f} vitórias.",
               "- **Lesões, trocas e mudanças de elenco não são modeladas**: o rating vem só de resultados.",

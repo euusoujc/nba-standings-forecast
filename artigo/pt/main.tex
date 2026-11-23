@@ -25,18 +25,18 @@
 \author{\IEEEauthorblockN{[Nome do Autor 1]}
 \IEEEauthorblockA{\textit{Universidade Federal do ABC (UFABC)}\\
 São Bernardo do Campo, Brasil \\
-[e-mail ou RA]}
+RA [RA do Autor 1]}
 \and
-\IEEEauthorblockN{[Nome do Autor 2]}
+\IEEEauthorblockN{Lucas Amorim de Souza}
 \IEEEauthorblockA{\textit{Universidade Federal do ABC (UFABC)}\\
 São Bernardo do Campo, Brasil \\
-[e-mail ou RA]}
+RA 11202321209}
 }
 
 \maketitle
 
 \begin{abstract}
-Depois de cerca de quinze jogos de uma temporada regular da NBA, a classificação é dominada por ruído, mas torcedores, imprensa e times já tiram conclusões dela. Investigamos quão bem é possível prever, nesse ponto da temporada 2026--27, o aproveitamento final de cada time e sua probabilidade de terminar entre os seis primeiros, na zona de play-in ou fora da pós-temporada de sua conferência. Com dezesseis temporadas de dados jogo a jogo coletados pela biblioteca nba\_api, construímos seis features a partir dos quinze primeiros jogos de cada time e comparamos dois baselines ingênuos com regressão linear, Ridge, Lasso e random forest, sob validação leave-one-season-out e holdout temporal. Todos os modelos treinados reduzem o erro absoluto médio de 7,6 para cerca de 5,6 vitórias em escala de 82 jogos; escolhemos o Ridge, cuja penalidade estabiliza features quase colineares baseadas em pontos sem perda de precisão. Alimentando um modelo logístico de jogo com as previsões do Ridge e simulando 10.000 vezes o restante do calendário, obtemos probabilidades bem calibradas em um backtest fora da amostra, com cobertura de 81\% para intervalos nominais de 80\%.
+Com uns quinze jogos disputados, a classificação da NBA ainda é quase toda ruído, mas já é usada para decidir quem é candidato e quem está fora. Neste trabalho prevemos, para a temporada 2026--27, o aproveitamento final de cada time e a chance de ele terminar entre os seis primeiros, no play-in ou fora da pós-temporada da sua conferência. Usamos dezesseis temporadas de dados jogo a jogo da nba\_api, seis features calculadas só com os primeiros jogos de cada time, dois baselines e quatro regressores (OLS, Ridge, Lasso e random forest), avaliados por leave-one-season-out e holdout temporal. Os quatro modelos derrubam o erro médio de 7,6 para cerca de 5,6 vitórias em 82 jogos; ficamos com o Ridge, que tem a mesma precisão e coeficientes estáveis. As previsões alimentam um modelo logístico de jogo e 10.000 simulações do calendário restante. Repetimos tudo em quatro datas da temporada (0, 5, 10 e 15 jogos): o Brier score do backtest cai de 0,533 para 0,421, e na versão final o intervalo de 80\% cobre 81\% dos resultados reais.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -45,22 +45,26 @@ análise esportiva, regressão Ridge, regressão à média, validação cruzada,
 
 %=====================================================================
 \section{Introdução}
-Todo mês de novembro, alguns times da NBA começam muito acima ou muito abaixo do esperado. Um começo 14--3 é sinal de candidato ao título ou uma boa fase que vai passar? A pergunta vai além da torcida: dirigentes decidem se compram ou vendem jogadores antes do prazo de trocas, e as narrativas da imprensa se formam cedo. Estatisticamente, é um caso clássico de \emph{regressão à média}: o aproveitamento no início da temporada é uma medida ruidosa da força do time, e valores extremos tendem a voltar para a média da liga~\cite{efron1975,efron1977}.
+Todo novembro aparece um time da NBA começando muito acima do que se esperava. Neste ano é o Philadelphia, com 14 vitórias e 3 derrotas. É candidato ao título ou só uma boa sequência? A resposta interessa a quem decide trocas antes do prazo, a quem escreve sobre a liga e a quem torce. Para a estatística, é um caso conhecido de \emph{regressão à média}: o aproveitamento do começo mede a força do time com muito ruído, e valores extremos tendem a voltar para perto da média~\cite{efron1975,efron1977}.
 
-Estudamos a seguinte pergunta: \emph{com cerca de 15 jogos disputados na temporada 2026--27 da NBA, qual será o aproveitamento final de cada time e qual a probabilidade de cada um terminar entre os seis primeiros (vaga direta nos playoffs), no torneio play-in (7º--10º) ou fora, em sua conferência?}
+A pergunta do trabalho é: \emph{com cerca de 15 jogos disputados na temporada 2026--27, qual será o aproveitamento final de cada time e qual a chance de cada um terminar entre os seis primeiros (vaga direta nos playoffs), no play-in (7º--10º) ou fora da sua conferência?}
 
-A abordagem tem duas etapas. Primeiro, um modelo de regressão supervisionado relaciona a informação disponível após $N=15$ jogos ao aproveitamento final. Tratamos isso como um problema de encolhimento (\emph{shrinkage}), para o qual modelos lineares regularizados como o Ridge~\cite{hoerl1970} são naturais, e os comparamos com baselines, Lasso~\cite{tibshirani1996} e random forests~\cite{breiman2001}. Depois, as forças previstas alimentam um modelo logístico de jogo e uma simulação de Monte Carlo~\cite{metropolis1949} do calendário restante, transformando previsões pontuais em probabilidades de posição na conferência. As duas etapas são validadas fora da amostra, incluindo um backtest da simulação completa em dezesseis temporadas passadas.
+Resolvemos em duas etapas. Primeiro, um modelo de regressão liga o que se sabe depois de $N=15$ jogos ao aproveitamento final. Isso é um problema de encolhimento (\emph{shrinkage}), e por isso comparamos o Ridge~\cite{hoerl1970} com baselines, Lasso~\cite{tibshirani1996} e random forest~\cite{breiman2001}. Depois, a força prevista de cada time entra num modelo logístico de jogo e numa simulação de Monte Carlo~\cite{metropolis1949} do calendário restante, que transforma uma previsão pontual em probabilidades de posição. As duas etapas são testadas fora da amostra, inclusive com um backtest da simulação inteira em dezesseis temporadas passadas.
+
+Além disso, refizemos o pipeline em quatro momentos da temporada: antes da estreia e depois de 5, 10 e 15 jogos. Assim dá para ver quanto cada bloco de jogos acrescenta e como a projeção de cada time mudou ao longo de novembro.
+
+O projeto foi montado para ser atualizado. Os dados vêm direto da API pública da NBA, então basta coletar de novo e rodar o pipeline para ter uma projeção com os jogos mais recentes. Os números deste artigo são uma foto de 22 de novembro de 2026.
 
 %=====================================================================
 \section{Dados}
 \subsection{Fonte e coleta}
-Usamos o endpoint \texttt{LeagueGameLog} do cliente Python de código aberto \texttt{nba\_api}~\cite{nbaapi}, que acessa o serviço oficial \url{stats.nba.com}, para coletar o box score por time de todos os jogos de temporada regular de 2010--11 a 2025--26 (16 temporadas completas) e da temporada 2026--27 até 22 de novembro de 2026. Cada linha time-jogo traz data, adversário, mando de quadra, resultado, pontos, arremessos de quadra e lances livres tentados, rebotes ofensivos e erros de ataque. As requisições foram espaçadas em um segundo, repetidas com espera exponencial em caso de falha e armazenadas em cache, um CSV por temporada. O calendário restante de 2026--27 (952 jogos) veio do endpoint \texttt{ScheduleLeagueV2}. Siglas de franquias que mudaram no período (NJN$\to$BKN, NOH$\to$NOP) foram normalizadas, e cada time foi associado à sua conferência. A amostra histórica tem 38.238 linhas time-jogo (19.119 jogos).
+Coletamos os dados com o endpoint \texttt{LeagueGameLog} do cliente Python \texttt{nba\_api}~\cite{nbaapi}, que acessa o \url{stats.nba.com}. Para cada jogo de temporada regular de 2010--11 a 2025--26 (16 temporadas completas) e da temporada 2026--27 até 22 de novembro de 2026, guardamos o box score de cada time: data, adversário, mando, resultado, pontos, arremessos de quadra e lances livres tentados, rebotes ofensivos e erros. As requisições foram espaçadas em um segundo, repetidas com espera exponencial em caso de falha e salvas em cache, um CSV por temporada. O calendário restante de 2026--27 (952 jogos) veio do endpoint \texttt{ScheduleLeagueV2}. Siglas de franquias que mudaram no período (NJN$\to$BKN, NOH$\to$NOP) foram normalizadas. A amostra histórica tem 38.238 linhas time-jogo (19.119 jogos).
 
 \subsection{Unidade de análise e alvo}
-Seja $N$ o menor número de jogos disputados por um time em 2026--27 no momento da coleta; aqui $N=15$ (os times tinham de 15 a 18 jogos). Cada observação é um time-temporada (480 históricos e 30 atuais). O alvo é o \emph{aproveitamento final} $y$, e não o número de vitórias, porque três temporadas foram encurtadas (66 jogos por time em 2011--12, de 64 a 75 em 2019--20 e 72 em 2020--21). Os erros são reportados em vitórias na escala de 82 jogos, isto é, $82\,|y-\hat y|$.
+Chamamos de $N$ o menor número de jogos disputados por um time em 2026--27 na data da coleta; aqui $N=15$ (os times tinham de 15 a 18 jogos). Cada observação é um time-temporada: 480 históricos e 30 atuais. O alvo é o \emph{aproveitamento final} $y$, e não o número de vitórias, porque três temporadas foram encurtadas (66 jogos por time em 2011--12, de 64 a 75 em 2019--20 e 72 em 2020--21). Os erros aparecem em vitórias na escala de 82 jogos, isto é, $82\,|y-\hat y|$.
 
 \subsection{Features}
-Todas as features usam apenas os $N$ primeiros jogos de cada time; nenhuma informação posterior ao $N$-ésimo jogo do time entra em qualquer feature:
+Todas as features usam só os $N$ primeiros jogos de cada time. Nenhuma informação posterior ao $N$-ésimo jogo entra:
 \begin{itemize}
 \item \textbf{Aproveitamento} após $N$ jogos.
 \item \textbf{Saldo de pontos por jogo}, $(\mathrm{PF}-\mathrm{PA})/N$.
@@ -75,11 +79,11 @@ na média entre os dois times.
 \mathrm{Pyth} = \frac{\mathrm{PF}^{14}}{\mathrm{PF}^{14}+\mathrm{PA}^{14}} = \frac{1}{1+(\mathrm{PA}/\mathrm{PF})^{14}},
 \label{eq:pyth}
 \end{equation}
-em que a forma da direita evita estouro numérico.
-\item \textbf{Força de tabela}: aproveitamento médio dos adversários enfrentados, calculado só com jogos disputados até a data do $N$-ésimo jogo do time e sem contar os jogos contra o próprio time.
-\item \textbf{Aproveitamento da temporada anterior} (a temporada 2009--10 também foi coletada para isso).
+calculada pela forma da direita para evitar estouro numérico.
+\item \textbf{Força de tabela}: aproveitamento médio dos adversários enfrentados, usando só jogos até a data do $N$-ésimo jogo do time e sem contar os jogos contra o próprio time.
+\item \textbf{Aproveitamento da temporada anterior} (por isso coletamos também 2009--10).
 \end{itemize}
-A Fig.~\ref{fig:corr} mostra que as três features baseadas em pontos são quase perfeitamente colineares ($r>0{,}99$) e que a força de tabela após 15 jogos praticamente não se correlaciona com o resultado final.
+Pela Fig.~\ref{fig:corr}, as três features baseadas em pontos são quase idênticas ($r>0{,}99$), e a força de tabela depois de 15 jogos praticamente não se correlaciona com o resultado final.
 
 \begin{figure}[t]
 \centerline{\includegraphics[width=0.92\columnwidth]{correlacao_features.png}}
@@ -89,8 +93,8 @@ A Fig.~\ref{fig:corr} mostra que as três features baseadas em pontos são quase
 
 %=====================================================================
 \section{Método}
-\subsection{Por que encolhimento}
-A Fig.~\ref{fig:rtm} mostra o aproveitamento final contra o aproveitamento após 15 jogos. A inclinação de mínimos quadrados é 0,63 e a reta cruza $y=x$ perto de 0,500: cada ponto acima ou abaixo de 0,500 após 15 jogos vale só cerca de 63\% de um ponto no fim da temporada. O desvio-padrão do aproveitamento cai de 0,190 após 15 jogos para 0,151 no fim. Um bom preditor precisa, portanto, \emph{encolher} as campanhas iniciais em direção à média. É exatamente isso que modelos de regressão aprendem; a questão é como combinar vários sinais ruidosos e colineares.
+\subsection{Por que encolher}
+A Fig.~\ref{fig:rtm} mostra o aproveitamento final contra o aproveitamento depois de 15 jogos. A reta de mínimos quadrados tem inclinação 0,63 e cruza $y=x$ perto de 0,500. Na prática, cada ponto acima ou abaixo de 0,500 depois de 15 jogos vale cerca de 63\% de um ponto no fim da temporada. O desvio-padrão do aproveitamento cai de 0,190 após 15 jogos para 0,151 no fim. Um bom preditor precisa puxar as campanhas iniciais em direção à média. Qualquer regressão aprende isso; a dúvida é como combinar vários sinais ruidosos e colineares.
 
 \begin{figure}[t]
 \centerline{\includegraphics[width=0.85\columnwidth]{regressao_a_media.png}}
@@ -103,46 +107,49 @@ Comparamos dois baselines e quatro regressores treinados:
 \begin{itemize}
 \item \textbf{Baseline A}: mantém o aproveitamento atual ($\hat y = $ aproveitamento após $N$ jogos).
 \item \textbf{Baseline B}: usa a Pythagorean expectation~\eqref{eq:pyth}.
-\item \textbf{Regressão linear (OLS)} sobre as seis features.
+\item \textbf{Regressão linear (OLS)} com as seis features.
 \item \textbf{Regressão Ridge}~\cite{hoerl1970}, que minimiza
 \begin{equation}
 \sum_{i=1}^{n}\left(y_i-\beta_0-\mathbf{x}_i^{\top}\boldsymbol{\beta}\right)^2+\alpha\,\|\boldsymbol{\beta}\|_2^2 .
 \label{eq:ridge}
 \end{equation}
-A penalidade $\ell_2$ encolhe os coeficientes e, em particular, distribui o peso entre preditores correlacionados em vez de dar a eles coeficientes grandes e de sinais opostos~\cite{islr2021,esl2009}.
+A penalidade $\ell_2$ encolhe os coeficientes e divide o peso entre preditores correlacionados, em vez de dar a eles coeficientes grandes com sinais opostos~\cite{islr2021,esl2009}.
 \item \textbf{Lasso}~\cite{tibshirani1996}, com penalidade $\ell_1$, que pode zerar coeficientes.
-\item \textbf{Random forest}~\cite{breiman2001} com 500 árvores, folha mínima de 10 observações e 50\% das features por divisão, como checagem não linear.
+\item \textbf{Random forest}~\cite{breiman2001} com 500 árvores, folha mínima de 10 observações e 50\% das features por divisão, para checar se há não linearidade.
 \end{itemize}
-Todas as features são padronizadas dentro de um \texttt{Pipeline} do scikit-learn~\cite{sklearn}, de modo que os parâmetros de escala são aprendidos apenas nas dobras de treino.
+As features são padronizadas dentro de um \texttt{Pipeline} do scikit-learn~\cite{sklearn}, de modo que média e desvio são calculados só com os dados de treino de cada dobra.
 
 \subsection{Protocolo de validação}
-Times-temporada de uma mesma temporada compartilham condições da liga (mudanças de regra, ritmo de jogo, a ``bolha'' de 2020), então a temporada é a unidade natural de agrupamento. Usamos (i) validação cruzada \textbf{leave-one-season-out} (LOSO), com 16 dobras, e (ii) um \textbf{holdout temporal}, treinando de 2010--11 a 2022--23 e testando de 2023--24 a 2025--26. A força de regularização $\alpha$ do Ridge e do Lasso é escolhida por um \texttt{GroupKFold} \emph{interno} (5 dobras, agrupadas por temporada) dentro de cada conjunto de treino externo, ou seja, validação cruzada aninhada. Como a curva de validação interna é quase plana para $\alpha$ pequeno, aplicamos a \textbf{regra de um erro-padrão}~\cite{esl2009}: o maior $\alpha$ cujo erro fica a até um erro-padrão do mínimo.
+Times de uma mesma temporada compartilham as condições da liga (regras, ritmo de jogo, a ``bolha'' de 2020), então a temporada é a unidade natural de agrupamento. Usamos (i) validação cruzada \textbf{leave-one-season-out} (LOSO), com 16 dobras, e (ii) um \textbf{holdout temporal}: treino de 2010--11 a 2022--23 e teste de 2023--24 a 2025--26. O $\alpha$ do Ridge e do Lasso sai de um \texttt{GroupKFold} \emph{interno} (5 dobras, agrupadas por temporada) dentro de cada treino externo, ou seja, validação cruzada aninhada. Como a curva de erro interna é quase plana para $\alpha$ pequeno, aplicamos a \textbf{regra de um erro-padrão}~\cite{esl2009}: o maior $\alpha$ cujo erro fica a até um erro-padrão do mínimo.
 
-Reportamos o MAE em vitórias (escala de 82 jogos) e a correlação de Spearman entre a classificação prevista e a real, calculada por temporada e conferência e depois promediada. Entre os modelos treinados cujo MAE LOSO fica a até um erro-padrão (entre temporadas) do melhor, escolhemos o mais regularizado (ordem de preferência: Ridge, Lasso, OLS, random forest).
+As métricas são o MAE em vitórias (escala de 82 jogos) e a correlação de Spearman entre a classificação prevista e a real, calculada por temporada e conferência e depois promediada. Entre os modelos cujo MAE LOSO fica a até um erro-padrão (entre temporadas) do melhor, escolhemos o mais regularizado, na ordem Ridge, Lasso, OLS, random forest.
 
 \subsection{Das previsões às chances de playoff}
-\paragraph{Modelo de jogo} Cada time recebe um rating $r$ igual ao seu aproveitamento final previsto. Nas temporadas históricas usamos as previsões LOSO, fora da amostra, para evitar vazamento. A probabilidade de o time $A$ vencer o time $B$ é modelada por uma regressão logística, no espírito do modelo de Bradley--Terry~\cite{bradley1952},
+\paragraph{Modelo de jogo} O rating $r$ de cada time é o seu aproveitamento final previsto. Nas temporadas históricas usamos as previsões LOSO, que são fora da amostra, para não vazar informação. A chance de o time $A$ vencer o time $B$ vem de uma regressão logística, na linha do modelo de Bradley--Terry~\cite{bradley1952}:
 \begin{equation}
 \mathrm{logit}\,P(A \text{ vence}) = b_{\Delta}\,(r_A - r_B) + b_{h}\,h,
 \label{eq:logit}
 \end{equation}
-em que $h=+1$ se $A$ joga em casa e $-1$ caso contrário; o intercepto é omitido por simetria. O modelo é ajustado em todos os jogos históricos disputados após o $N$-ésimo jogo de ambos os times (30.790 linhas time-jogo).
+com $h=+1$ se $A$ joga em casa e $-1$ se joga fora; não há intercepto, por simetria. O modelo é ajustado em todos os jogos históricos disputados depois do $N$-ésimo jogo dos dois times (30.790 linhas time-jogo).
 
-\paragraph{Incerteza do rating} O rating também é uma estimativa. Decompomos a variância do resíduo LOSO do aproveitamento final em erro de rating e sorte jogo a jogo,
+\paragraph{Incerteza do rating} O rating também é uma estimativa. Separamos a variância do resíduo LOSO do aproveitamento final em erro de rating e sorte jogo a jogo,
 \begin{equation}
 \mathrm{Var}(y-\hat y) \approx f^2\sigma^2 + \frac{\overline{y(1-y)}\,(82-N)}{82^2}, \quad f=\frac{82-N}{82},
 \label{eq:sigma}
 \end{equation}
 e resolvemos para $\sigma$. Em cada simulação, cada rating recebe uma perturbação $\mathcal{N}(0,\sigma^2)$.
 
-\paragraph{Monte Carlo} Simulamos os 952 jogos restantes de 2026--27 10.000 vezes e somamos os resultados à campanha atual de cada time. Jogos disputados e marcados somam 80 por time: os dois últimos dependem da fase eliminatória da NBA Cup, ainda não definida, e são simulados contra um adversário médio em quadra neutra. Os times são ordenados em cada conferência, e empates são desfeitos aleatoriamente. Para cada time reportamos as vitórias esperadas, um intervalo de 80\% (percentis 10 e 90) e as probabilidades de terminar em 1º--6º, 7º--10º e 11º--15º.
+\paragraph{Monte Carlo} Simulamos os 952 jogos restantes de 2026--27 10.000 vezes e somamos os resultados à campanha atual de cada time. Disputados e marcados somam 80 jogos por time; os dois que faltam dependem da fase eliminatória da NBA Cup, ainda não definida, e são simulados contra um adversário médio em quadra neutra. Os times são ordenados em cada conferência e os empates são desfeitos ao acaso. Para cada time reportamos as vitórias esperadas, um intervalo de 80\% (percentis 10 e 90) e as chances de terminar em 1º--6º, 7º--10º e 11º--15º.
 
-\paragraph{Backtest} Para verificar a calibração, refazemos cada temporada histórica a partir da data em que o último time completou $N$ jogos, a mesma situação de 2026--27, usando ratings LOSO e reajustando o modelo de jogo~\eqref{eq:logit} e $\sigma$ sem a temporada testada. Medimos a cobertura dos intervalos de 80\% e o Brier score de três classes~\cite{brier1950}.
+\paragraph{Backtest} Para checar a calibração, refazemos cada temporada histórica a partir da data em que o último time completou $N$ jogos, que é a situação de 2026--27. Os ratings são os LOSO, e o modelo de jogo~\eqref{eq:logit} e o $\sigma$ são reajustados sem a temporada testada. Medimos a cobertura dos intervalos de 80\% e o Brier score de três classes~\cite{brier1950}.
+
+\subsection{Versões com 0, 5, 10 e 15 jogos}
+Para ver como a previsão evolui, repetimos todo o processo em quatro datas de 2026--27. A V0 é a véspera da estreia (19/10), e as features se resumem ao aproveitamento da temporada anterior. A V5, a V10 e a V15 usam os dias em que o último time completou 5, 10 e 15 jogos (02/11, 11/11 e 22/11). Em cada versão recalculamos as features, o Ridge (com LOSO), o modelo de jogo, o $\sigma$ e o backtest. A simulação parte da campanha daquele dia; jogos disputados depois da data entram como ainda não jogados. A V15 é idêntica à simulação principal.
 
 %=====================================================================
 \section{Resultados}
 \subsection{Comparação de modelos}
-A Tabela~\ref{tab:models} resume os dois esquemas de validação. Os quatro modelos treinados reduzem o erro do baseline ingênuo em cerca de duas vitórias (de 7,60 para 5,50--5,72 no LOSO) e melhoram a correlação de postos. As diferenças entre eles ficam abaixo de um erro-padrão entre temporadas (0,25 vitória). O holdout temporal conta a mesma história, então os modelos não pioram nas temporadas recentes. A Fig.~\ref{fig:pvr} compara o baseline A com o Ridge: as faixas verticais do baseline, uma para cada campanha possível após 15 jogos, são comprimidas em direção à diagonal.
+A Tabela~\ref{tab:models} resume os dois esquemas de validação. Os quatro modelos treinados tiram cerca de duas vitórias do erro do baseline ingênuo (de 7,60 para 5,50--5,72 no LOSO) e também melhoram a correlação de postos. As diferenças entre eles ficam abaixo de um erro-padrão entre temporadas (0,25 vitória). O holdout temporal dá o mesmo quadro, então os modelos não pioram nas temporadas recentes. Na Fig.~\ref{fig:pvr}, as faixas verticais do baseline (uma para cada campanha possível depois de 15 jogos) ficam comprimidas em direção à diagonal no Ridge.
 
 \begin{table}[t]
 \caption{Comparação de modelos (MAE em vitórias na escala de 82 jogos; Spearman da classificação por conferência)}
@@ -166,7 +173,7 @@ A Tabela~\ref{tab:models} resume os dois esquemas de validação. Os quatro mode
 \end{figure*}
 
 \subsection{Por que Ridge}
-O OLS tem o menor MAE LOSO (5,50 contra 5,62), mas a diferença está dentro do ruído, enquanto seus coeficientes não são interpretáveis (Tabela~\ref{tab:coefs}): saldo de pontos e net rating, com correlação de 0,999, recebem $+0{,}16$ e $-0{,}18$. O Ridge, com $\alpha=100$ escolhido pela regra de um erro-padrão, distribui aproximadamente o mesmo peso ($\approx0{,}023$) entre as três features baseadas em pontos, mantém o aproveitamento inicial e a temporada anterior como sinais relevantes e dá peso quase nulo à força de tabela. O intercepto é 0,500, então as previsões são encolhidas em direção à média da liga. Essa é a estabilidade esperada da regularização $\ell_2$ sob multicolinearidade~\cite{hoerl1970,islr2021}.
+O OLS tem o menor MAE LOSO (5,50 contra 5,62), mas a diferença está dentro do ruído e os coeficientes dele não fazem sentido (Tabela~\ref{tab:coefs}): saldo de pontos e net rating, com correlação de 0,999, recebem $+0{,}16$ e $-0{,}18$. O Ridge, com $\alpha=100$ escolhido pela regra de um erro-padrão, dá quase o mesmo peso ($\approx0{,}023$) às três features de pontos, mantém o aproveitamento inicial e a temporada anterior como sinais relevantes e dá peso quase nulo à força de tabela. O intercepto é 0,500, então as previsões são puxadas para a média da liga. É o comportamento esperado da regularização $\ell_2$ quando há multicolinearidade~\cite{hoerl1970,islr2021}.
 
 \begin{table}[t]
 \caption{Coeficientes padronizados ajustados nos 480 times-temporada históricos}
@@ -183,7 +190,7 @@ O OLS tem o menor MAE LOSO (5,50 contra 5,62), mas a diferença está dentro do 
 \end{table}
 
 \subsection{Quantos jogos são necessários?}
-Repetindo a avaliação LOSO com features construídas a partir de $N=5$ até $41$ jogos (Tabela~\ref{tab:sens}, Fig.~\ref{fig:sens}), vemos que o ganho do modelo é maior quando há pouca informação: após 5 jogos, o Ridge reduz o erro do baseline em 46\%, de 13,3 para 7,2 vitórias. Com meia temporada ($N=41$), as duas abordagens quase convergem, porque a própria campanha já é pouco ruidosa.
+Repetimos a avaliação LOSO com features construídas a partir de $N=5$ até $41$ jogos (Tabela~\ref{tab:sens}, Fig.~\ref{fig:sens}). O modelo ajuda mais quando há pouca informação: depois de 5 jogos, o Ridge reduz o erro do baseline em 46\%, de 13,3 para 7,2 vitórias. Com meia temporada ($N=41$), os dois praticamente se igualam, porque a campanha já é pouco ruidosa.
 
 \begin{table}[t]
 \caption{Sensibilidade ao número de jogos $N$ (LOSO)}
@@ -206,7 +213,7 @@ $N$ & \textbf{MAE baseline} & \textbf{MAE Ridge} & \textbf{Ganho} & \textbf{Spea
 \end{figure}
 
 \subsection{Simulação}
-O modelo de jogo ajustado tem $b_{\Delta}=4{,}35$ e $b_h=0{,}32$, isto é, probabilidade de 57,9\% de vitória do mandante entre times iguais; sua acurácia nos jogos de treino é de 64,3\% (log-loss 0,629). A Eq.~\eqref{eq:sigma} dá $\sigma=0{,}085$. No backtest fora da amostra, os intervalos de 80\% contêm o número real de vitórias em 81,0\% dos 480 times-temporada, e o Brier score de três classes é 0,421, contra 0,658 de probabilidades constantes (6/15, 4/15, 5/15). A Fig.~\ref{fig:calib} mostra que as frequências previstas e observadas acompanham a diagonal de perto.
+O modelo de jogo tem $b_{\Delta}=4{,}35$ e $b_h=0{,}32$, o que dá 57,9\% de chance de vitória ao mandante quando os times são iguais. A acurácia nos jogos de treino é de 64,3\% (log-loss 0,629), e a Eq.~\eqref{eq:sigma} dá $\sigma=0{,}085$. No backtest fora da amostra, os intervalos de 80\% contêm o número real de vitórias em 81,0\% dos 480 times-temporada. O Brier score de três classes é 0,421, contra 0,658 de probabilidades constantes (6/15, 4/15, 5/15). Na Fig.~\ref{fig:calib}, as frequências observadas acompanham as probabilidades previstas de perto.
 
 \begin{figure}[t]
 \centerline{\includegraphics[width=0.8\columnwidth]{calibracao_simulacao.png}}
@@ -214,8 +221,33 @@ O modelo de jogo ajustado tem $b_{\Delta}=4{,}35$ e $b_h=0{,}32$, isto é, proba
 \label{fig:calib}
 \end{figure}
 
+\subsection{Versões com 0, 5, 10 e 15 jogos}
+A Tabela~\ref{tab:versions} mostra que cada bloco de cinco jogos melhora o backtest. O Brier cai de 0,533 na pré-temporada para 0,488, 0,444 e 0,421, e o erro médio das vitórias finais cai de 7,8 para 5,3. O $\sigma$ também diminui (0,111 $\to$ 0,085), já que o modelo fica menos incerto sobre a força de cada time. A cobertura do intervalo de 80\% fica perto do nominal da V5 em diante; na V0 ela é de 87\%, um pouco larga. Na V0 o Ridge erra 8,15 vitórias, pouco melhor que repetir a campanha da temporada anterior (8,54).
+
+A Fig.~\ref{fig:versions} mostra as trajetórias de 2026--27. Alguns times mudaram de patamar com poucos jogos. O Memphis, que vinha de 25 vitórias, saiu de 33 vitórias esperadas na V0 para 48 na V15, e sua chance de top 6 foi de 14\% para 48\%. O Charlotte fez o caminho oposto (43 $\to$ 28 vitórias esperadas, top 6 de 44\% para 1\%). Outros oscilaram e voltaram: o Toronto subiu para 49 vitórias esperadas na V5 e caiu para 38 na V15. Esse vaivém é o motivo de não confiar em uma única fotografia com poucos jogos.
+
+\begin{table*}[t]
+\caption{Versões da previsão: data de corte, jogos disputados pelos times nessa data, MAE LOSO (baseline e Ridge), $\sigma$ do rating e métricas do backtest fora da amostra (Brier de 3 classes, cobertura do intervalo de 80\% e erro médio das vitórias finais). Na V0 o baseline repete o aproveitamento da temporada anterior.}
+\begin{center}
+\begin{tabular}{lcccccccc}
+\toprule
+\textbf{Versão} & \textbf{Corte} & \textbf{Jogos} & \textbf{MAE baseline} & \textbf{MAE Ridge} & $\boldsymbol{\sigma}$ & \textbf{Brier} & \textbf{Cobertura IC80} & \textbf{MAE backtest} \\
+\midrule
+\input{tab_versions.tex}
+\bottomrule
+\end{tabular}
+\label{tab:versions}
+\end{center}
+\end{table*}
+
+\begin{figure*}[t]
+\centerline{\includegraphics[width=0.88\textwidth]{versoes_trajetoria.png}}
+\caption{Vitórias esperadas de cada time de 2026--27 em cada versão da previsão (V0: véspera da estreia; V5, V10, V15: dias em que o último time completou 5, 10 e 15 jogos).}
+\label{fig:versions}
+\end{figure*}
+
 \subsection{Projeção 2026--27}
-A Tabela~\ref{tab:proj} e a Fig.~\ref{fig:heat} mostram a projeção em 22 de novembro de 2026. Boston (97\% de top 6) e San Antonio (95\%) são os favoritos mais claros. O modelo também modera começos fortes: o Philadelphia está 14--3, mas a projeção é de 52,4 vitórias, porque seu saldo de pontos é modesto; o Memphis, 12--5 após uma temporada de 25 vitórias, tem só 48\% de chance de terminar entre os seis primeiros. Na parte de baixo, Sacramento e Utah têm menos de 1\% de chance de chegar sequer ao play-in.
+A Tabela~\ref{tab:proj} e a Fig.~\ref{fig:heat} mostram a projeção de 22 de novembro de 2026. Boston (97\% de chance de top 6) e San Antonio (95\%) são os favoritos mais claros. O modelo também segura começos fortes: o Philadelphia está 14--3, mas a projeção é de 52,4 vitórias, porque o saldo de pontos dele é modesto; o Memphis, 12--5 depois de uma temporada de 25 vitórias, tem 48\% de chance de top 6. Embaixo, Sacramento e Utah têm menos de 1\% de chance de chegar sequer ao play-in.
 
 \begin{table*}[t]
 \caption{Projeção 2026--27 (10.000 simulações, em 22/11/2026): campanha atual, vitórias esperadas, intervalo de 80\% e probabilidades (\%) de top 6, play-in e fora}
@@ -243,24 +275,26 @@ A Tabela~\ref{tab:proj} e a Fig.~\ref{fig:heat} mostram a projeção em 22 de no
 
 %=====================================================================
 \section{Discussão}
-O principal achado é que \emph{como} as campanhas iniciais são encolhidas importa mais do que \emph{qual} algoritmo é usado: quando o modelo pode puxar a campanha em direção à média e combiná-la com saldo de pontos e temporada anterior, OLS, Ridge, Lasso e random forest são estatisticamente indistinguíveis, e todos superam os baselines ingênuos com folga. A random forest não melhora os modelos lineares, o que é coerente com uma relação quase linear (Fig.~\ref{fig:rtm}) e com uma amostra pequena (480 linhas). O Ridge foi preferido não pela precisão, mas pela estabilidade: seus coeficientes são interpretáveis e robustos à colinearidade quase exata entre as features de pontos, que é a motivação clássica da regularização $\ell_2$. Note que a regressão à média em si é capturada por qualquer modelo linear, por meio de uma inclinação menor que um e de um intercepto em 0,500; a penalidade acrescenta estabilidade aos coeficientes, não um encolhimento adicional em direção a 0,500.
+O resultado principal é que importa mais \emph{encolher} as campanhas iniciais do que escolher o algoritmo. Quando o modelo pode puxar a campanha para a média e combiná-la com saldo de pontos e temporada anterior, OLS, Ridge, Lasso e random forest ficam estatisticamente empatados, e todos ganham com folga dos baselines. A random forest não supera os modelos lineares, o que combina com uma relação quase linear (Fig.~\ref{fig:rtm}) e uma amostra pequena (480 linhas). Preferimos o Ridge pela estabilidade, não pela precisão: os coeficientes são interpretáveis e não se desequilibram com a colinearidade das features de pontos. Vale notar que a regressão à média em si é capturada por qualquer modelo linear, com inclinação menor que um e intercepto em 0,500. A penalidade estabiliza os coeficientes; ela não acrescenta um encolhimento extra em direção a 0,500.
 
-O baseline Pythagorean supera a campanha bruta, confirmando que o saldo de pontos é um sinal de força menos ruidoso do que vitórias e derrotas. A força de tabela após 15 jogos quase não traz informação, provavelmente porque as campanhas dos adversários também são ruidosas nesse ponto.
+O baseline Pythagorean ganha da campanha bruta, o que confirma que saldo de pontos mede força com menos ruído do que vitórias e derrotas. A força de tabela depois de 15 jogos quase não ajuda, provavelmente porque as campanhas dos adversários também são ruidosas nesse ponto.
 
-O backtest é a evidência mais forte de que as probabilidades são confiáveis: os intervalos têm a cobertura nominal e a curva de calibração acompanha a diagonal. Sem o termo de incerteza do rating, a simulação trataria as previsões como exatas e os intervalos ficariam estreitos demais.
+O backtest é o argumento mais forte de que as probabilidades são confiáveis: os intervalos têm a cobertura nominal e a curva de calibração acompanha a diagonal. Sem o termo de incerteza do rating, a simulação trataria as previsões como exatas e os intervalos sairiam estreitos demais. As versões V0--V15 mostram a mesma coisa de outro ângulo: o método continua calibrado com 5 ou 10 jogos, só que com intervalos mais largos.
 
-\paragraph*{Limitações} (i) Com 15 jogos, mesmo o melhor modelo erra em média cerca de 5,6 vitórias; uma única lesão pode mudar mais do que isso. (ii) Lesões, trocas e mudanças de elenco não são modeladas; os ratings dependem só dos resultados. (iii) Os ratings são estáticos: usam apenas os 15 primeiros jogos, para casar com o treino, de modo que o 16º ao 18º jogos de quem já os disputou contam como vitórias, mas não atualizam o rating. (iv) Empates são desfeitos aleatoriamente, e não pelos critérios oficiais da NBA. (v) Os dois jogos da NBA Cup ainda não marcados são simulados contra um adversário médio, e jogos em quadra neutra são tratados como jogos com mando normal. (vi) A vantagem de jogar em casa é suposta constante entre temporadas, inclusive em 2020--21, disputada em grande parte sem público.
+\paragraph*{Limitações} (i) Com 15 jogos, mesmo o melhor modelo erra em média cerca de 5,6 vitórias. (ii) Lesões, trocas e mudanças de elenco não são modeladas: o rating vem só dos resultados, como se todos os times seguissem com o elenco dos primeiros jogos. Um titular que se machuca por um mês pode mudar mais do que o erro médio do modelo. (iii) Os ratings são estáticos: usam só os 15 primeiros jogos, para casar com o treino, de modo que o 16º ao 18º jogos de quem já os disputou contam como vitórias mas não atualizam o rating. (iv) Empates são desfeitos ao acaso, e não pelos critérios oficiais da NBA. (v) Os dois jogos da NBA Cup ainda não marcados são simulados contra um adversário médio, e jogos em quadra neutra são tratados como jogos com mando normal. (vi) A vantagem de jogar em casa é suposta constante entre temporadas, inclusive em 2020--21, disputada em grande parte sem público.
 
 %=====================================================================
 \section{Conclusão}
-Quinze jogos não são uma temporada, mas também não são inúteis. Um modelo linear regularizado com seis features simples reduz em um quarto o erro da previsão ingênua ``campanha atual'' (de 7,6 para 5,6 vitórias), e quase pela metade após apenas cinco jogos. Combinado com um modelo logístico de jogo, incerteza no rating e simulação de Monte Carlo, ele produz probabilidades calibradas de top 6, play-in e eliminação para a temporada 2026--27. Extensões naturais são informações por jogador (lesões, minutos, trocas), ratings atualizados jogo a jogo e os critérios oficiais de desempate.
+Quinze jogos não são uma temporada, mas dizem bastante. Um modelo linear regularizado com seis features simples corta em um quarto o erro da previsão ingênua ``campanha atual'' (de 7,6 para 5,6 vitórias), e quase pela metade quando há só cinco jogos. Com um modelo logístico de jogo, incerteza no rating e simulação de Monte Carlo, ele produz probabilidades calibradas de top 6, play-in e eliminação para 2026--27. Refazer a previsão com 0, 5, 10 e 15 jogos mostra o ganho de cada bloco de partidas e quais times mudaram de patamar cedo.
+
+Como os dados vêm direto da API da NBA, o trabalho pode ser atualizado ao longo da temporada: basta coletar de novo e rodar o notebook. Os próximos passos naturais são acompanhar novas versões (20, 25, 30 jogos), atualizar o rating jogo a jogo, usar os critérios oficiais de desempate e incluir informação por jogador, como lesões e trocas.
 
 %=====================================================================
 \section*{Contribuições dos Autores}
-[A ser preenchido pelos autores. Exemplo: A1 definiu a pergunta de pesquisa e o plano do projeto, coletou os dados e escreveu o artigo; A2 implementou os modelos e a simulação, produziu as figuras e preparou a apresentação. Todos os autores revisaram a versão final.]
+[A preencher pelos autores. Exemplo: [Nome do Autor 1] definiu a pergunta de pesquisa e o plano do projeto, coletou os dados e escreveu o artigo; Lucas Amorim de Souza implementou os modelos e a simulação, produziu as figuras e preparou a apresentação. Os dois revisaram a versão final.]
 
 \section*{Declaração de Uso de IA}
-O Claude (Anthropic), por meio da ferramenta Claude Code, foi usado neste projeto para implementar e depurar o código Python (coleta de dados, features, modelos, simulação e figuras) seguindo um plano em fases escrito pelos autores; para revisar a metodologia, o que levou à regra de um erro-padrão para $\alpha$ e ao backtest fora da amostra da simulação; e para redigir este artigo e os slides da apresentação em inglês e português. Os autores definiram a pergunta de pesquisa, a fonte de dados, as features, os modelos e o protocolo de validação, conferiram os resultados executando o notebook e são responsáveis por todo o conteúdo. [Autores: ajustem esta declaração ao uso real.]
+Usamos o assistente Claude, da Anthropic, com o modelo Claude Opus, por meio da ferramenta Claude Code. Ele foi usado para implementar e depurar o código Python (coleta, features, modelos, simulação, versões e figuras) a partir de um plano em fases escrito pelos autores; para revisar a metodologia, o que levou à regra de um erro-padrão para $\alpha$ e ao backtest fora da amostra; e para redigir e revisar este artigo, o roteiro e os slides em português e inglês. Os autores definiram a pergunta, a fonte de dados, as features, os modelos e o protocolo de validação, conferiram os resultados rodando o notebook e respondem por todo o conteúdo. [Autores: ajustem esta declaração ao uso real.]
 
 \begin{thebibliography}{00}
 \bibitem{efron1975} B. Efron and C. Morris, ``Data analysis using Stein's estimator and its generalizations,'' \textit{J. Amer. Statist. Assoc.}, vol. 70, no. 350, pp. 311--319, 1975.

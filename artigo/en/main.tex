@@ -19,18 +19,18 @@
 \author{\IEEEauthorblockN{[Author 1 Name]}
 \IEEEauthorblockA{\textit{Federal University of ABC (UFABC)}\\
 S\~ao Bernardo do Campo, Brazil \\
-[email or RA]}
+RA [Author 1 RA]}
 \and
-\IEEEauthorblockN{[Author 2 Name]}
+\IEEEauthorblockN{Lucas Amorim de Souza}
 \IEEEauthorblockA{\textit{Federal University of ABC (UFABC)}\\
 S\~ao Bernardo do Campo, Brazil \\
-[email or RA]}
+RA 11202321209}
 }
 
 \maketitle
 
 \begin{abstract}
-After roughly fifteen games of an NBA regular season, the standings are dominated by noise, yet fans, media and teams already draw conclusions from them. We ask how well the final winning percentage of each team, and its probability of finishing in the top six, in the play-in zone or out of the postseason of its conference, can be predicted at that point of the 2026--27 season. Using sixteen seasons of team game logs collected with the nba\_api library, we build six features from the first fifteen games of each team and compare two naive baselines with ordinary least squares, Ridge, Lasso and random forest regressors under leave-one-season-out and temporal holdout validation. All learned models reduce the mean absolute error from 7.6 to about 5.6 wins on an 82-game scale; we select Ridge, whose penalty stabilizes nearly collinear point-based features without loss of accuracy. Feeding the Ridge forecasts into a logistic game model and simulating the remaining schedule 10,000 times yields probabilities that are well calibrated in an out-of-sample backtest, with 81\% coverage of nominal 80\% intervals.
+Fifteen games into an NBA season, the standings are mostly noise, but people already use them to sort contenders from also-rans. We forecast, for the 2026--27 season, each team's final winning percentage and its chance of finishing in the top six, in the play-in or out of the postseason in its conference. We use sixteen seasons of game logs from nba\_api, six features computed only from each team's first games, two baselines and four regressors (OLS, Ridge, Lasso and random forest), evaluated with leave-one-season-out and temporal holdout validation. All four models cut the mean absolute error from 7.6 to about 5.6 wins on an 82-game scale; we keep Ridge, which is as accurate and has stable coefficients. The forecasts feed a logistic game model and 10,000 simulations of the remaining schedule. We repeat the whole pipeline at four points of the season (0, 5, 10 and 15 games): the backtest Brier score drops from 0.533 to 0.421, and in the final version the 80\% interval covers 81\% of actual outcomes.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -39,41 +39,45 @@ sports analytics, ridge regression, regression to the mean, cross-validation, Mo
 
 %=====================================================================
 \section{Introduction}
-Every November, a few NBA teams start far above or below expectations. Is a 14--3 start evidence of a contender, or a lucky streak that will fade? The question matters beyond fandom: front offices decide whether to buy or sell at the trade deadline, and media narratives form early. Statistically, it is a classic case of \emph{regression to the mean}: an early-season winning percentage is a noisy measurement of team strength, and extreme values tend to move back toward the league average~\cite{efron1975,efron1977}.
+Every November some NBA team starts far above expectations. This year it is Philadelphia, at 14--3. Title contender or hot streak? The answer matters to front offices weighing trades before the deadline, to the people covering the league and to fans. Statistically it is a textbook case of \emph{regression to the mean}: early-season winning percentage is a noisy measure of team strength, and extreme values tend to drift back toward the league average~\cite{efron1975,efron1977}.
 
-We study the following question: \emph{with about 15 games played in the 2026--27 NBA season, what will be the final winning percentage of each team, and what is the probability that each finishes in the top six (direct playoff spot), in the play-in tournament (7th--10th) or out, in its conference?}
+Our question is: \emph{with about 15 games played in the 2026--27 NBA season, what will each team's final winning percentage be, and what is its probability of finishing in the top six (a direct playoff berth), in the play-in tournament (7th--10th) or out, within its conference?}
 
-Our approach has two stages. First, a supervised regression model maps information available after $N=15$ games to the final winning percentage. We frame this as a shrinkage problem, for which regularized linear models such as Ridge~\cite{hoerl1970} are a natural fit, and compare them with baselines, Lasso~\cite{tibshirani1996} and random forests~\cite{breiman2001}. Second, the predicted strengths feed a logistic game model and a Monte Carlo simulation~\cite{metropolis1949} of the remaining schedule, which turns point forecasts into probabilities of conference positions. We validate both stages out of sample, including a backtest of the full simulation on sixteen past seasons.
+We answer it in two steps. First, a regression model maps what is known after $N=15$ games to the final winning percentage. This is a shrinkage problem, so we compare Ridge~\cite{hoerl1970} with baselines, Lasso~\cite{tibshirani1996} and random forests~\cite{breiman2001}. Second, each team's predicted strength goes into a logistic game model and a Monte Carlo simulation~\cite{metropolis1949} of the remaining schedule, which turns a point forecast into probabilities of finishing positions. Both steps are tested out of sample, including a backtest of the full simulation on sixteen past seasons.
+
+We also reran the pipeline at four points in the season: before opening night and after 5, 10 and 15 games. That shows how much each block of games adds and how each team's projection moved during November.
+
+The project is meant to be updated. The data come straight from the NBA's public API, so collecting again and rerunning the pipeline gives a projection with the latest games. The numbers in this paper are a snapshot from November 22, 2026.
 
 %=====================================================================
 \section{Data}
 \subsection{Source and collection}
-We used the \texttt{LeagueGameLog} endpoint of the open-source \texttt{nba\_api} Python client~\cite{nbaapi}, which wraps the official \url{stats.nba.com} service, to collect team-level box scores of every regular-season game from 2010--11 to 2025--26 (16 complete seasons) and of the 2026--27 season up to November 22, 2026. Each team-game row contains the date, opponent, home or away indicator, result, points, field goal and free throw attempts, offensive rebounds and turnovers. Requests were spaced by one second, retried with exponential back-off on failure and cached as one CSV file per season. The remaining 2026--27 schedule (952 games) was obtained from the \texttt{ScheduleLeagueV2} endpoint. Franchise abbreviations that changed during the period (NJN$\to$BKN, NOH$\to$NOP) were normalized, and each team was mapped to its conference. The historical sample has 38{,}238 team-game rows (19{,}119 games).
+We collected the data with the \texttt{LeagueGameLog} endpoint of the Python client \texttt{nba\_api}~\cite{nbaapi}, which queries \url{stats.nba.com}. For every regular-season game from 2010--11 to 2025--26 (16 complete seasons) and of 2026--27 through November 22, 2026, we kept each team's box score: date, opponent, home/away, result, points, field goals and free throws attempted, offensive rebounds and turnovers. Requests were spaced one second apart, retried with exponential backoff and cached as one CSV per season. The remaining 2026--27 schedule (952 games) came from the \texttt{ScheduleLeagueV2} endpoint. Franchise abbreviations that changed during the period (NJN$\to$BKN, NOH$\to$NOP) were normalized. The historical sample has 38,238 team-game rows (19,119 games).
 
 \subsection{Unit of analysis and target}
-Let $N$ be the smallest number of games played by any team in 2026--27 at collection time; here $N=15$ (teams had played 15 to 18 games). Each observation is a team-season (480 historical, 30 current). The target is the \emph{final winning percentage} $y$ rather than the number of wins, because three seasons were shortened (66 games per team in 2011--12, 64 to 75 in 2019--20 and 72 in 2020--21). Errors are reported in wins on an 82-game scale, i.e.\ $82\,|y-\hat y|$.
+Let $N$ be the smallest number of games any team had played in 2026--27 on the collection date; here $N=15$ (teams had played 15 to 18). Each observation is a team-season: 480 historical and 30 current. The target is the \emph{final winning percentage} $y$ rather than wins, because three seasons were shortened (66 games per team in 2011--12, 64 to 75 in 2019--20 and 72 in 2020--21). Errors are reported in wins on an 82-game scale, $82\,|y-\hat y|$.
 
 \subsection{Features}
-All features are computed using only the first $N$ games of each team, so no information after a team's $N$-th game enters any feature:
+Every feature uses only each team's first $N$ games. Nothing after a team's $N$-th game enters any feature:
 \begin{itemize}
-\item \textbf{Win \%} after $N$ games.
+\item \textbf{Winning percentage} after $N$ games.
 \item \textbf{Point differential per game}, $(\mathrm{PF}-\mathrm{PA})/N$.
 \item \textbf{Net rating}, $100(\mathrm{PF}-\mathrm{PA})/\mathrm{Poss}$, with possessions estimated as~\cite{kubatko2007}
 \begin{equation}
 \mathrm{Poss} \approx \mathrm{FGA} + 0.44\,\mathrm{FTA} - \mathrm{OREB} + \mathrm{TOV},
 \label{eq:poss}
 \end{equation}
-averaged between the two teams.
+averaged over both teams.
 \item \textbf{Pythagorean expectation}~\cite{kubatko2007},
 \begin{equation}
 \mathrm{Pyth} = \frac{\mathrm{PF}^{14}}{\mathrm{PF}^{14}+\mathrm{PA}^{14}} = \frac{1}{1+(\mathrm{PA}/\mathrm{PF})^{14}},
 \label{eq:pyth}
 \end{equation}
-where the right-hand form avoids numerical overflow.
-\item \textbf{Strength of schedule}: the average winning percentage of the opponents faced, computed only with games played up to the date of the team's $N$-th game and excluding games against the team itself.
-\item \textbf{Previous season win \%} (the 2009--10 season was also collected for this purpose).
+computed with the right-hand form to avoid overflow.
+\item \textbf{Strength of schedule}: the average winning percentage of the opponents faced, using only games played up to the date of the team's $N$-th game and excluding games against the team itself.
+\item \textbf{Previous-season winning percentage} (we collected 2009--10 for this).
 \end{itemize}
-Fig.~\ref{fig:corr} shows that the three point-based features are almost perfectly collinear ($r>0.99$), and that strength of schedule after 15 games is essentially uncorrelated with the final outcome.
+Fig.~\ref{fig:corr} shows that the three point-based features are nearly identical ($r>0.99$), and that strength of schedule after 15 games is almost uncorrelated with the final outcome.
 
 \begin{figure}[t]
 \centerline{\includegraphics[width=0.92\columnwidth]{correlacao_features.png}}
@@ -83,8 +87,8 @@ Fig.~\ref{fig:corr} shows that the three point-based features are almost perfect
 
 %=====================================================================
 \section{Method}
-\subsection{Why shrinkage}
-Fig.~\ref{fig:rtm} plots the final winning percentage against the winning percentage after 15 games. The least-squares slope is 0.63 and the line crosses $y=x$ near 0.500: each point above or below .500 after 15 games is worth only about 63\% of a point at the end of the season. The standard deviation of the win \% falls from 0.190 after 15 games to 0.151 at the end of the season. A good predictor must therefore \emph{shrink} early records toward the mean, which is precisely what regression models learn, and the remaining question is how to combine several noisy, collinear signals.
+\subsection{Why shrink}
+Fig.~\ref{fig:rtm} plots final winning percentage against winning percentage after 15 games. The least-squares slope is 0.63 and the line crosses $y=x$ near 0.500. In practice, each point above or below 0.500 after 15 games is worth about 63\% of a point at season's end. The standard deviation of winning percentage drops from 0.190 after 15 games to 0.151 at the end. A good predictor has to pull early records toward the mean. Any regression learns that; the open question is how to combine several noisy, collinear signals.
 
 \begin{figure}[t]
 \centerline{\includegraphics[width=0.85\columnwidth]{regressao_a_media.png}}
@@ -95,48 +99,51 @@ Fig.~\ref{fig:rtm} plots the final winning percentage against the winning percen
 \subsection{Models}
 We compare two baselines and four learned regressors:
 \begin{itemize}
-\item \textbf{Baseline A} keeps the current win \% ($\hat y = $ win \% after $N$ games).
-\item \textbf{Baseline B} uses the Pythagorean expectation~\eqref{eq:pyth}.
+\item \textbf{Baseline A}: keep the current winning percentage ($\hat y = $ win \% after $N$ games).
+\item \textbf{Baseline B}: the Pythagorean expectation~\eqref{eq:pyth}.
 \item \textbf{Linear regression (OLS)} on the six features.
 \item \textbf{Ridge regression}~\cite{hoerl1970}, which minimizes
 \begin{equation}
 \sum_{i=1}^{n}\left(y_i-\beta_0-\mathbf{x}_i^{\top}\boldsymbol{\beta}\right)^2+\alpha\,\|\boldsymbol{\beta}\|_2^2 .
 \label{eq:ridge}
 \end{equation}
-The $\ell_2$ penalty shrinks coefficients and, in particular, spreads weight across correlated predictors instead of giving them large coefficients of opposite signs~\cite{islr2021,esl2009}.
-\item \textbf{Lasso}~\cite{tibshirani1996}, with an $\ell_1$ penalty that can set coefficients exactly to zero.
-\item \textbf{Random forest}~\cite{breiman2001} with 500 trees, minimum leaf size 10 and 50\% of features per split, as a non-linear check.
+The $\ell_2$ penalty shrinks the coefficients and splits weight across correlated predictors instead of giving them large coefficients of opposite sign~\cite{islr2021,esl2009}.
+\item \textbf{Lasso}~\cite{tibshirani1996}, with an $\ell_1$ penalty that can set coefficients to zero.
+\item \textbf{Random forest}~\cite{breiman2001} with 500 trees, a minimum leaf size of 10 and 50\% of features per split, to check for nonlinearity.
 \end{itemize}
-All features are standardized inside a scikit-learn~\cite{sklearn} \texttt{Pipeline}, so scaling parameters are learned only on training folds.
+Features are standardized inside a scikit-learn \texttt{Pipeline}~\cite{sklearn}, so means and standard deviations come only from each fold's training data.
 
 \subsection{Validation protocol}
-Team-seasons from the same season share league-wide conditions (rule changes, pace, the 2020 bubble), so the season is the natural grouping unit. We use (i) \textbf{leave-one-season-out} (LOSO) cross-validation, with 16 folds, and (ii) a \textbf{temporal holdout}, training on 2010--11 to 2022--23 and testing on 2023--24 to 2025--26. The regularization strength $\alpha$ of Ridge and Lasso is chosen by an \emph{inner} \texttt{GroupKFold} (5 folds, grouped by season) inside each outer training set, i.e.\ nested cross-validation. Because the inner validation curve is almost flat for small $\alpha$, we apply the \textbf{one-standard-error rule}~\cite{esl2009}: the largest $\alpha$ whose error is within one standard error of the minimum.
+Teams in the same season share league conditions (rules, pace, the 2020 ``bubble''), so the season is the natural grouping unit. We use (i) \textbf{leave-one-season-out} (LOSO) cross-validation, with 16 folds, and (ii) a \textbf{temporal holdout}: train on 2010--11 to 2022--23 and test on 2023--24 to 2025--26. The $\alpha$ of Ridge and Lasso is chosen by an \emph{inner} \texttt{GroupKFold} (5 folds grouped by season) inside each outer training set, that is, nested cross-validation. Because the inner error curve is nearly flat for small $\alpha$, we apply the \textbf{one-standard-error rule}~\cite{esl2009}: the largest $\alpha$ whose error is within one standard error of the minimum.
 
-We report the MAE in wins (82-game scale) and the Spearman rank correlation between predicted and actual standings, computed per season and conference and then averaged. Among learned models whose LOSO MAE lies within one between-season standard error of the best, we select the most regularized one (preference order Ridge, Lasso, OLS, random forest).
+We report MAE in wins (82-game scale) and the Spearman correlation between predicted and actual standings, computed per season and conference and then averaged. Among the models whose LOSO MAE is within one standard error (across seasons) of the best, we pick the most regularized, in the order Ridge, Lasso, OLS, random forest.
 
 \subsection{From forecasts to playoff odds}
-\paragraph{Game model} Each team receives a rating $r$ equal to its predicted final win \%. For historical seasons we use the out-of-sample LOSO predictions, avoiding leakage. The probability that team $A$ beats team $B$ is modeled by a logistic regression, in the spirit of the Bradley--Terry model~\cite{bradley1952},
+\paragraph{Game model} Each team's rating $r$ is its predicted final winning percentage. For historical seasons we use the LOSO predictions, which are out of sample, to avoid leakage. The probability that team $A$ beats team $B$ comes from a logistic regression in the spirit of the Bradley--Terry model~\cite{bradley1952}:
 \begin{equation}
 \mathrm{logit}\,P(A \text{ wins}) = b_{\Delta}\,(r_A - r_B) + b_{h}\,h,
 \label{eq:logit}
 \end{equation}
-where $h=+1$ if $A$ plays at home and $-1$ otherwise; the intercept is omitted by symmetry. The model is fitted on all historical games played after the $N$-th game of both teams (30{,}790 team-game rows).
+with $h=+1$ if $A$ is at home and $-1$ otherwise; there is no intercept, by symmetry. The model is fitted on every historical game played after both teams' $N$-th game (30,790 team-game rows).
 
-\paragraph{Rating uncertainty} A rating is itself an estimate. We decompose the variance of the LOSO residual of the final win \% into rating error and game-to-game luck,
+\paragraph{Rating uncertainty} The rating is an estimate too. We split the variance of the LOSO residual of the final winning percentage into rating error and game-to-game luck,
 \begin{equation}
 \mathrm{Var}(y-\hat y) \approx f^2\sigma^2 + \frac{\overline{y(1-y)}\,(82-N)}{82^2}, \quad f=\frac{82-N}{82},
 \label{eq:sigma}
 \end{equation}
-and solve for $\sigma$. In each simulation, every rating is perturbed by $\mathcal{N}(0,\sigma^2)$.
+and solve for $\sigma$. In each simulation, every rating gets a $\mathcal{N}(0,\sigma^2)$ perturbation.
 
-\paragraph{Monte Carlo} We simulate the 952 remaining 2026--27 games 10{,}000 times and add the results to each team's current record. Played and scheduled games add up to 80 per team: the last two games depend on the NBA Cup knockout stage, which is not yet scheduled, so they are simulated against a league-average opponent on a neutral court. Teams are ranked within each conference, and ties are broken at random. For each team we report expected wins, an 80\% interval (10th--90th percentiles) and the probabilities of finishing 1st--6th, 7th--10th and 11th--15th.
+\paragraph{Monte Carlo} We simulate the 952 remaining 2026--27 games 10,000 times and add the results to each team's current record. Played plus scheduled games add up to 80 per team; the last two depend on the NBA Cup knockout stage, which is not set yet, and are simulated against an average opponent on a neutral court. Teams are ranked within each conference and ties are broken at random. For each team we report expected wins, an 80\% interval (10th and 90th percentiles) and the probabilities of finishing 1st--6th, 7th--10th and 11th--15th.
 
-\paragraph{Backtest} To check calibration, we replay each historical season from the date on which the last team completed $N$ games, the same situation as in 2026--27, using LOSO ratings and refitting the game model~\eqref{eq:logit} and $\sigma$ without the tested season. We measure the coverage of the 80\% intervals and a three-class Brier score~\cite{brier1950}.
+\paragraph{Backtest} To check calibration, we replay each historical season from the date the last team completed $N$ games, which is the 2026--27 situation. Ratings are the LOSO ones, and the game model~\eqref{eq:logit} and $\sigma$ are refitted without the season being tested. We measure the coverage of the 80\% intervals and the three-class Brier score~\cite{brier1950}.
+
+\subsection{Versions with 0, 5, 10 and 15 games}
+To see how the forecast evolves, we repeat the whole process on four dates of 2026--27. V0 is the eve of opening night (Oct.\ 19), and its only feature is the previous season's winning percentage. V5, V10 and V15 use the days on which the last team completed 5, 10 and 15 games (Nov.\ 2, Nov.\ 11 and Nov.\ 22). For each version we recompute the features, Ridge (with LOSO), the game model, $\sigma$ and the backtest. The simulation starts from that day's records; games played after the date count as not yet played. V15 is identical to the main simulation.
 
 %=====================================================================
 \section{Results}
 \subsection{Model comparison}
-Table~\ref{tab:models} summarizes both validation schemes. All four learned models cut the error of the naive baseline by about two wins (7.60 to 5.50--5.72 in LOSO) and improve the rank correlation. The differences among them are below one between-season standard error (0.25 wins). The temporal holdout tells the same story, so the models do not degrade on recent seasons. Fig.~\ref{fig:pvr} contrasts baseline A with Ridge: the baseline's vertical bands, one per possible record after 15 games, are compressed toward the diagonal.
+Table~\ref{tab:models} summarizes both validation schemes. All four learned models take about two wins off the naive baseline's error (from 7.60 to 5.50--5.72 under LOSO) and improve the rank correlation. The differences among them are below one between-season standard error (0.25 wins). The temporal holdout gives the same picture, so the models do not degrade on recent seasons. In Fig.~\ref{fig:pvr}, the baseline's vertical bands (one per possible record after 15 games) are squeezed toward the diagonal by Ridge.
 
 \begin{table}[t]
 \caption{Model comparison (MAE in wins on an 82-game scale; Spearman of conference standings)}
@@ -160,7 +167,7 @@ Table~\ref{tab:models} summarizes both validation schemes. All four learned mode
 \end{figure*}
 
 \subsection{Why Ridge}
-OLS has the lowest LOSO MAE (5.50 vs.\ 5.62), but the gap is within noise, while its coefficients are not interpretable (Table~\ref{tab:coefs}): point differential and net rating, correlated at 0.999, receive $+0.16$ and $-0.18$. Ridge, with $\alpha=100$ selected by the one-standard-error rule, distributes about the same weight ($\approx0.023$) across the three point-based features, keeps the early win \% and the previous season as relevant signals and gives strength of schedule almost no weight. The intercept equals 0.500, so predictions are shrunk toward the league mean. This is the stability we expect from $\ell_2$ regularization under multicollinearity~\cite{hoerl1970,islr2021}.
+OLS has the lowest LOSO MAE (5.50 versus 5.62), but the gap is within the noise and its coefficients make no sense (Table~\ref{tab:coefs}): point differential and net rating, correlated at 0.999, get $+0.16$ and $-0.18$. Ridge, with $\alpha=100$ chosen by the one-standard-error rule, gives roughly the same weight ($\approx0.023$) to the three point-based features, keeps early winning percentage and previous season as relevant signals and gives strength of schedule almost no weight. The intercept is 0.500, so forecasts are pulled toward the league average. That is what $\ell_2$ regularization is expected to do under multicollinearity~\cite{hoerl1970,islr2021}.
 
 \begin{table}[t]
 \caption{Standardized coefficients fitted on all 480 historical team-seasons}
@@ -177,7 +184,7 @@ OLS has the lowest LOSO MAE (5.50 vs.\ 5.62), but the gap is within noise, while
 \end{table}
 
 \subsection{How many games are needed?}
-Repeating the LOSO evaluation with features built from $N=5$ to $41$ games (Table~\ref{tab:sens}, Fig.~\ref{fig:sens}) shows that the gain of the model is largest when information is scarce: after 5 games, Ridge cuts the baseline error by 46\%, from 13.3 to 7.2 wins. After half a season ($N=41$), the two approaches nearly converge, because the record itself is no longer very noisy.
+We repeated the LOSO evaluation with features built from $N=5$ up to $41$ games (Table~\ref{tab:sens}, Fig.~\ref{fig:sens}). The model helps most when information is scarce: after 5 games, Ridge cuts the baseline error by 46\%, from 13.3 to 7.2 wins. At mid-season ($N=41$) the two are nearly equal, because the record itself is no longer very noisy.
 
 \begin{table}[t]
 \caption{Sensitivity to the number of games $N$ (LOSO)}
@@ -200,7 +207,7 @@ $N$ & \textbf{Baseline MAE} & \textbf{Ridge MAE} & \textbf{Gain} & \textbf{Ridge
 \end{figure}
 
 \subsection{Simulation}
-The fitted game model has $b_{\Delta}=4.35$ and $b_h=0.32$, i.e.\ a 57.9\% home win probability between equal teams; its accuracy on the training games is 64.3\% (log-loss 0.629). Eq.~\eqref{eq:sigma} gives $\sigma=0.085$. In the out-of-sample backtest, the 80\% intervals contain the actual number of wins in 81.0\% of the 480 team-seasons, and the three-class Brier score is 0.421, against 0.658 for constant probabilities (6/15, 4/15, 5/15). Fig.~\ref{fig:calib} shows that predicted and observed frequencies follow the diagonal closely.
+The game model has $b_{\Delta}=4.35$ and $b_h=0.32$, which gives the home team a 57.9\% chance of winning between equal teams. Its accuracy on the training games is 64.3\% (log-loss 0.629), and Eq.~\eqref{eq:sigma} gives $\sigma=0.085$. In the out-of-sample backtest, the 80\% intervals contain the actual number of wins for 81.0\% of the 480 team-seasons. The three-class Brier score is 0.421, against 0.658 for constant probabilities (6/15, 4/15, 5/15). In Fig.~\ref{fig:calib}, observed frequencies track predicted probabilities closely.
 
 \begin{figure}[t]
 \centerline{\includegraphics[width=0.8\columnwidth]{calibracao_simulacao.png}}
@@ -208,8 +215,33 @@ The fitted game model has $b_{\Delta}=4.35$ and $b_h=0.32$, i.e.\ a 57.9\% home 
 \label{fig:calib}
 \end{figure}
 
+\subsection{Versions with 0, 5, 10 and 15 games}
+Table~\ref{tab:versions} shows that every block of five games improves the backtest. The Brier score falls from 0.533 in the preseason to 0.488, 0.444 and 0.421, and the mean error on final wins drops from 7.8 to 5.3. $\sigma$ shrinks as well (0.111 $\to$ 0.085), since the model grows less unsure about each team's strength. Coverage of the 80\% interval stays close to nominal from V5 on; at V0 it is 87\%, a bit wide. At V0, Ridge misses by 8.15 wins, only slightly better than repeating last season's record (8.54).
+
+Fig.~\ref{fig:versions} shows the 2026--27 trajectories. A few teams changed tier within a handful of games. Memphis, coming off a 25-win season, went from 33 expected wins at V0 to 48 at V15, and its top-six probability from 14\% to 48\%. Charlotte went the other way (43 $\to$ 28 expected wins, top six from 44\% to 1\%). Others swung and came back: Toronto rose to 49 expected wins at V5 and fell to 38 at V15. That back-and-forth is why a single early snapshot should not be trusted.
+
+\begin{table*}[t]
+\caption{Forecast versions: cutoff date, games played by the teams on that date, LOSO MAE (baseline and Ridge), rating $\sigma$ and out-of-sample backtest metrics (three-class Brier, coverage of the 80\% interval and mean error on final wins). At V0 the baseline repeats the previous season's winning percentage.}
+\begin{center}
+\begin{tabular}{lcccccccc}
+\toprule
+\textbf{Version} & \textbf{Cutoff} & \textbf{Games} & \textbf{Baseline MAE} & \textbf{Ridge MAE} & $\boldsymbol{\sigma}$ & \textbf{Brier} & \textbf{80\% coverage} & \textbf{Backtest MAE} \\
+\midrule
+\input{tab_versions.tex}
+\bottomrule
+\end{tabular}
+\label{tab:versions}
+\end{center}
+\end{table*}
+
+\begin{figure*}[t]
+\centerline{\includegraphics[width=0.88\textwidth]{versoes_trajetoria.png}}
+\caption{Expected wins of each 2026--27 team in each forecast version (V0: eve of opening night; V5, V10, V15: days on which the last team completed 5, 10 and 15 games).}
+\label{fig:versions}
+\end{figure*}
+
 \subsection{2026--27 projection}
-Table~\ref{tab:proj} and Fig.~\ref{fig:heat} show the projection as of November 22, 2026. Boston (97\% top six) and San Antonio (95\%) are the clearest favorites. The model also tempers hot starts: Philadelphia is 14--3 but projects to 52.4 wins, since its point differential is modest, and Memphis, 12--5 after a 25-win season, has only a 48\% chance of a top-six finish. At the bottom, Sacramento and Utah have less than a 1\% chance of reaching even the play-in.
+Table~\ref{tab:proj} and Fig.~\ref{fig:heat} show the projection as of November 22, 2026. Boston (97\% top-six probability) and San Antonio (95\%) are the clearest favorites. The model also tempers hot starts: Philadelphia is 14--3 but projects to 52.4 wins, because its point differential is modest; Memphis, 12--5 after a 25-win season, has a 48\% chance of a top-six finish. At the bottom, Sacramento and Utah have less than a 1\% chance of even reaching the play-in.
 
 \begin{table*}[t]
 \caption{2026--27 projection (10{,}000 simulations, as of Nov.\ 22, 2026): current record, expected wins, 80\% interval and probabilities (\%) of top six, play-in and out}
@@ -237,24 +269,26 @@ Table~\ref{tab:proj} and Fig.~\ref{fig:heat} show the projection as of November 
 
 %=====================================================================
 \section{Discussion}
-The main finding is that \emph{how} early records are shrunk matters more than \emph{which} learner is used: once a model is allowed to regress the record toward the mean and combine it with point differential and the previous season, OLS, Ridge, Lasso and random forests are statistically indistinguishable, and all beat the naive baselines by a wide margin. The random forest does not improve on linear models, which is consistent with an almost linear relationship (Fig.~\ref{fig:rtm}) and a small sample (480 rows). Ridge was preferred not for accuracy but for stability: its coefficients are interpretable and robust to the near-exact collinearity among point-based features, which is the textbook motivation for $\ell_2$ regularization. Note that the regression to the mean itself is captured by any linear model, through a slope below one and an intercept at 0.500; the penalty adds coefficient stability, not extra shrinkage toward 0.500.
+The main finding is that \emph{shrinking} early records matters more than the choice of algorithm. Once a model can pull the record toward the mean and combine it with point differential and the previous season, OLS, Ridge, Lasso and random forest are statistically tied, and all of them beat the baselines comfortably. The random forest does not beat the linear models, which fits a nearly linear relationship (Fig.~\ref{fig:rtm}) and a small sample (480 rows). We chose Ridge for stability, not accuracy: its coefficients are interpretable and do not blow up under the collinearity of the point-based features. Note that regression to the mean itself is captured by any linear model, through a slope below one and an intercept at 0.500. The penalty stabilizes the coefficients; it does not add extra shrinkage toward 0.500.
 
-The Pythagorean baseline beats the raw record, confirming that point differential is a less noisy signal of strength than wins and losses. Strength of schedule after 15 games carries almost no information, probably because opponents' records are themselves noisy at that point.
+The Pythagorean baseline beats the raw record, which confirms that point differential measures strength with less noise than wins and losses. Strength of schedule after 15 games adds almost nothing, probably because opponents' records are noisy at that point too.
 
-The backtest is the strongest evidence that the probabilities can be trusted: intervals have their nominal coverage and the calibration curve tracks the diagonal. Without the rating-uncertainty term, the simulation would treat the forecasts as exact and the intervals would be too narrow.
+The backtest is the strongest evidence that the probabilities can be trusted: the intervals have nominal coverage and the calibration curve follows the diagonal. Without the rating-uncertainty term, the simulation would treat forecasts as exact and the intervals would come out too narrow. Versions V0--V15 show the same thing from another angle: the method stays calibrated with 5 or 10 games, just with wider intervals.
 
-\paragraph*{Limitations} (i) With 15 games, even the best model errs by about 5.6 wins on average; a single injury can move a team more than that. (ii) Injuries, trades and roster changes are not modeled; ratings depend only on results. (iii) Ratings are static: they use only the first 15 games, to match training, so the 16th to 18th games of teams that have played them count as wins but do not update ratings. (iv) Ties are broken at random instead of using the official NBA tiebreakers. (v) The two NBA Cup games not yet scheduled are simulated against an average opponent, and neutral-site games are treated as regular home games. (vi) The home-court effect is assumed constant across seasons, including the 2020--21 season played largely without fans.
+\paragraph*{Limitations} (i) With 15 games, even the best model misses by about 5.6 wins on average. (ii) Injuries, trades and roster changes are not modeled: ratings come only from results, as if every team kept its early-season roster. A starter who goes down for a month can move a team by more than the model's average error. (iii) Ratings are static: they use only the first 15 games, to match training, so games 16--18 of teams that have played them count as wins but do not update the rating. (iv) Ties are broken at random rather than by the official NBA criteria. (v) The two unscheduled NBA Cup games are simulated against an average opponent, and neutral-site games are treated as regular home games. (vi) Home-court advantage is assumed constant across seasons, including 2020--21, played largely without fans.
 
 %=====================================================================
 \section{Conclusion}
-Fifteen games are not a season, but they are not useless either. A regularized linear model built on six simple features reduces the error of the naive ``current record'' forecast by a quarter (7.6 to 5.6 wins), and by nearly half after only five games. Combined with a logistic game model, rating uncertainty and Monte Carlo simulation, it produces calibrated probabilities of top-six, play-in and out finishes for the 2026--27 season. Natural extensions are player-level information (injuries, minutes, trades), ratings updated game by game and the official tiebreaking rules.
+Fifteen games are not a season, but they say a lot. A regularized linear model with six simple features cuts the error of the naive ``current record'' forecast by a quarter (from 7.6 to 5.6 wins), and nearly in half when only five games have been played. Combined with a logistic game model, rating uncertainty and Monte Carlo simulation, it produces calibrated top-six, play-in and elimination probabilities for 2026--27. Rerunning the forecast with 0, 5, 10 and 15 games shows what each block of games adds and which teams changed tier early.
+
+Because the data come straight from the NBA's API, the work can be refreshed during the season: collect again and rerun the notebook. Natural next steps are tracking new versions (20, 25, 30 games), updating ratings game by game, using the official tiebreakers and adding player-level information such as injuries and trades.
 
 %=====================================================================
 \section*{Author Contributions}
-[To be completed by the authors. Example: A1 defined the research question and the project plan, collected the data and wrote the article; A2 implemented the models and the simulation, produced the figures and prepared the lightning talk. All authors reviewed the final version.]
+[To be completed by the authors. Example: [Author 1 Name] defined the research question and project plan, collected the data and wrote the article; Lucas Amorim de Souza implemented the models and the simulation, produced the figures and prepared the presentation. Both authors reviewed the final version.]
 
 \section*{Declaration of AI Use}
-Claude (Anthropic), through the Claude Code tool, was used in this project to implement and debug the Python code (data collection, features, models, simulation and figures) following a phased plan written by the authors; to review the methodology, which led to the one-standard-error rule for $\alpha$ and to the out-of-sample backtest of the simulation; and to draft this article and the presentation slides in English and Portuguese. The authors defined the research question, the data source, the features, the models and the validation protocol, checked the results by running the notebook, and are responsible for all content. [Authors: adjust this statement to reflect your actual use.]
+We used Anthropic's Claude assistant, with the Claude Opus model, through the Claude Code tool. It was used to implement and debug the Python code (data collection, features, models, simulation, forecast versions and figures) from a phased plan written by the authors; to review the methodology, which led to the one-standard-error rule for $\alpha$ and the out-of-sample backtest; and to draft and revise this article, the talk script and the slides in English and Portuguese. The authors defined the question, the data source, the features, the models and the validation protocol, checked the results by running the notebook, and are responsible for all content. [Authors: adjust this statement to reflect your actual use.]
 
 \begin{thebibliography}{00}
 \bibitem{efron1975} B. Efron and C. Morris, ``Data analysis using Stein's estimator and its generalizations,'' \textit{J. Amer. Statist. Assoc.}, vol. 70, no. 350, pp. 311--319, 1975.
