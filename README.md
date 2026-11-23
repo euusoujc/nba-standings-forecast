@@ -106,6 +106,4 @@ Veja [results/resumo.md](results/resumo.md). Em resumo:
 - **Dados.** As estatísticas são da NBA, obtidas em `stats.nba.com` pela biblioteca
   [nba_api](https://github.com/swar/nba_api) (licença MIT). Os dados pertencem à NBA e foram usados só para fins
   acadêmicos, sem uso comercial; os CSVs em `data/` estão aqui apenas para reprodutibilidade.
-- **Código.** Ainda sem licença de software definida. Se os autores quiserem permitir reuso, basta adicionar um
-  arquivo `LICENSE` (por exemplo, MIT).
 - **Bibliotecas:** pandas, NumPy, scikit-learn, SciPy, Matplotlib e Jupyter.
