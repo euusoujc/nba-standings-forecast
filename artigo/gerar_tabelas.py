@@ -1,9 +1,11 @@
 """Gera as tabelas LaTeX do artigo (EN e PT) a partir de results/ e copia as figuras.
 
 Uso: python artigo/gerar_tabelas.py
-Saída: artigo/en/tab_*.tex, artigo/pt/tab_*.tex, artigo/<lang>/figures/*.png
+Saída: artigo/en/tab_*.tex, artigo/pt/tab_*.tex, artigo/<lang>/figures/*.png e
+       artigo/overleaf_<lang>.zip (pacote pronto para subir no Overleaf)
 """
 import shutil
+import zipfile
 from pathlib import Path
 
 import pandas as pd
@@ -108,6 +110,20 @@ def main():
         for f in FIGS:
             shutil.copy(src / f, out / "figures" / f)
         print(f"{lang}: tabelas e {len(FIGS)} figuras prontas em {out}")
+        make_zip(lang)
+
+
+def make_zip(lang):
+    """Pacote para o Overleaf (New Project > Upload Project): main.tex, tabelas e figuras."""
+    out = HERE / lang
+    zpath = HERE / f"overleaf_{lang}.zip"
+    with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(out / "main.tex", "main.tex")
+        for t in sorted(out.glob("tab_*.tex")):
+            z.write(t, t.name)
+        for f in FIGS:
+            z.write(out / "figures" / f, f"figures/{f}")
+    print(f"{lang}: {zpath.name} atualizado")
 
 
 if __name__ == "__main__":
