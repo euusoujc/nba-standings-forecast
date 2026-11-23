@@ -61,8 +61,9 @@ Todas as figuras são geradas em PT (`figures/`) e EN (`figures/en/`).
   slide a slide, cada termo e métrica, o valor no projeto e o que ele implica. Para regenerar depois de mudar resultados ou textos,
   edite `slides_<lang>.body.html` e rode `python apresentacao/build.py`.
 - **Artigo (IEEE):** `artigo/pt/main.tex` e `artigo/en/main.tex`. As tabelas (`tab_*.tex`) e as figuras saem de
-  `results/` via `python artigo/gerar_tabelas.py`. Para compilar no Overleaf, compacte a pasta `artigo/pt` (ou
-  `artigo/en`) e suba em *New Project → Upload Project*.
+  `results/` via `python artigo/gerar_tabelas.py`, que também monta `artigo/overleaf_pt.zip` e `overleaf_en.zip`.
+  Para compilar no Overleaf, suba o zip em *New Project → Upload Project*. Os zips não vão para o git: rode o script
+  sempre que mudar o artigo, para não usar um zip velho.
 
 A primeira coleta leva ~10 min (17 temporadas, 1 requisição/s com retry). Depois disso, tudo
 vem do cache em `data/raw/`. Seed fixa: 42.
