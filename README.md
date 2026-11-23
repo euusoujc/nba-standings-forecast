@@ -2,7 +2,7 @@
 
 Projeto final de Aprendizado de Máquina (UFABC, 2026.3).
 
-**Autores:** [Nome do Autor 1] (RA [RA do Autor 1]) e Lucas Amorim de Souza (RA 11202321209).
+**Autores:** Julio Cesar Salvino (RA 11202322071) e Lucas Amorim de Souza (RA 11202321209).
 
 Com uns 15 jogos disputados, o projeto prevê o aproveitamento final de cada time e a chance de ele terminar no
 **top 6**, no **play-in (7-10)** ou **fora**, por conferência. A previsão é refeita com 0, 5, 10 e 15 jogos para
