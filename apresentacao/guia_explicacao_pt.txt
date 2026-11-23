@@ -1,0 +1,278 @@
+﻿GUIA DE EXPLICAÇÃO — TERMOS, MÉTRICAS E O QUE CADA NÚMERO QUER DIZER
+==============================
+
+Este guia acompanha os 14 slides de apresentacao_pt.html, na mesma ordem. O roteiro de fala (roteiro_pt.md) diz o que falar em 5 minutos; este guia explica o que cada coisa significa, para vocês dominarem o assunto e responderem perguntas. Todos os números são da foto de 22/11/2026 (N = 15 jogos).
+
+Para cada termo: o que é → valor no projeto → o que isso implica.
+
+▶ SLIDE 1 — TÍTULO
+
+"15 jogos não são uma temporada." A temporada regular da NBA tem 82 jogos por time. Com 15, cada time jogou menos de 20% da temporada. O título resume a tese: dá para prever bastante com 15 jogos, mas não dá para levar a classificação de novembro ao pé da letra.
+
+Ridge e Monte Carlo são as duas peças do método: o Ridge estima a força de cada time; o Monte Carlo transforma essa força em chances de classificação. Os dois são explicados nos slides 5, 8 e 9.
+
+▶ SLIDE 2 — A PERGUNTA
+
+Aproveitamento (win %): vitórias divididas por jogos. Philadelphia com 14-3 tem 14/17 = 0,824.
+
+Top 6 / play-in / fora. Cada conferência (Leste e Oeste) tem 15 times.
+
+• Top 6 (1º ao 6º): vaga direta nos playoffs.
+• Play-in (7º ao 10º): mini torneio que decide as duas últimas vagas.
+• Fora (11º ao 15º): eliminado.
+
+P(top 6) é a probabilidade de o time terminar entre os seis primeiros. É o que o projeto entrega no fim, junto com as vitórias esperadas.
+
+▶ SLIDE 3 — DADOS
+
+nba_api: biblioteca Python que baixa dados do site oficial de estatísticas da NBA (stats.nba.com).
+
+Game log: uma linha por time por jogo, com data, adversário, mando, resultado, pontos e estatísticas de arremesso.
+
+16 temporadas, 480 times-temporada. De 2010-11 a 2025-26 são 16 temporadas com 30 times: 16 × 30 = 480. Cada time em cada temporada é uma observação. Isso é pouco para Machine Learning (por isso modelos simples funcionam bem aqui, ver slide 7).
+
+Features (variáveis de entrada), todas calculadas só com os 15 primeiros jogos:
+
+• Aproveitamento — O que é: vitórias / jogos; Exemplo (PHI): 12-3 nos 15 primeiros = 0,800
+• Saldo por jogo — O que é: (pontos feitos − sofridos) / jogos; Exemplo (PHI): +2,8
+• Net rating — O que é: saldo a cada 100 posses de bola (corrige o ritmo de jogo); Exemplo (PHI): +2,7
+• Pythagorean — O que é: vitórias "merecidas" pelos pontos (slide 5); Exemplo (PHI): 0,586
+• Força de tabela — O que é: aproveitamento médio dos adversários enfrentados; Exemplo (PHI): 0,460
+• Temporada anterior — O que é: aproveitamento final do ano passado; Exemplo (PHI): 0,549
+
+Alvo (target): o que o modelo tenta prever. Aqui é o aproveitamento final, não o número de vitórias, porque 2011-12, 2019-20 e 2020-21 tiveram menos de 82 jogos. Os erros são convertidos para vitórias multiplicando por 82.
+
+Vazamento (data leakage): usar, sem querer, informação que não existiria na hora da previsão. Exemplo: calcular a força de tabela com jogos de dezembro para prever em novembro. Evitamos isso cortando tudo no 15º jogo de cada time.
+
+▶ SLIDE 4 — REGRESSÃO À MÉDIA
+
+Regressão à média: quando uma medida tem muito ruído, valores extremos tendem a voltar para perto da média na medição seguinte. Um time que começa 12-3 provavelmente teve um pouco de sorte; um que começa 3-12, um pouco de azar.
+
+O gráfico: cada ponto é um time-temporada. Eixo x = aproveitamento depois de 15 jogos; eixo y = aproveitamento final.
+
+• A linha tracejada (y = x) é o que aconteceria se o começo fosse a verdade.
+• A linha vermelha é a reta ajustada: final = 0,18 + 0,63 × aproveitamento após 15 jogos.
+
+Inclinação 0,63 → cada ponto acima de 0,500 no começo vale só 63% no fim. Exemplo: um time com 0,800 depois de 15 jogos (30 pontos acima de 0,500) termina, em média, com 0,500 + 0,63 × 0,300 ≈ 0,69.
+
+Por que a reta cruza 0,500? Porque 0,18 + 0,63 × 0,5 ≈ 0,50: um time mediano no começo continua mediano.
+
+Desvio-padrão cai de 0,190 (depois de 15 jogos) para 0,151 (fim): os aproveitamentos do começo são mais espalhados porque têm mais ruído.
+
+O que implica: qualquer previsão boa precisa "encolher" o começo em direção a 0,500. É isso que os modelos aprendem, e é o que o baseline ingênuo não faz.
+
+▶ SLIDE 5 — OS MODELOS
+
+Baseline: modelo de referência, bem simples, que serve de régua. Se um modelo sofisticado não ganha do baseline, ele não serve.
+
+• Mantém aproveitamento: supõe que o time vai terminar com o mesmo aproveitamento de hoje. PHI terminaria com 0,800 × 82 ≈ 66 vitórias.
+• Pythagorean (expectativa pitagórica): estima o aproveitamento pelos pontos, PF¹⁴ / (PF¹⁴ + PA¹⁴), em que PF são pontos feitos e PA pontos sofridos. O expoente 14 é o valor usado no basquete. Ideia: placar diz mais sobre força do que vitórias apertadas. PHI tem 0,586, bem abaixo dos 0,800 da campanha.
+
+Regressão linear (OLS, mínimos quadrados ordinários): acha a combinação das seis features (ŷ = β₀ + β₁x₁ + … + β₆x₆) que minimiza a soma dos erros ao quadrado. Os coeficientes β dizem quanto cada feature pesa.
+
+Features padronizadas: cada feature é transformada para média 0 e desvio 1 antes do treino. Assim os coeficientes ficam comparáveis entre si (saldo em pontos e aproveitamento em fração passam a ter a mesma escala).
+
+Ridge (regressão com penalidade L2): é a regressão linear com uma multa para coeficientes grandes. Minimiza
+
+    soma dos erros² + α × soma dos coeficientes²
+
+• α (alfa) controla a força da multa. α = 0 é o OLS; α grande empurra todos os coeficientes para zero.
+• No projeto, α = 100.
+• Efeito prático: quando duas features dizem a mesma coisa, o Ridge divide o peso entre elas em vez de dar um coeficiente enorme positivo a uma e enorme negativo à outra (slide 8).
+
+Lasso (penalidade L1): multa a soma dos valores absolutos dos coeficientes. Diferente do Ridge, pode zerar coeficientes, ou seja, faz seleção de features.
+
+Random Forest: média de 500 árvores de decisão, cada uma treinada numa amostra diferente dos dados. Capta relações não lineares. Folha mínima 10 = cada folha da árvore precisa ter pelo menos 10 times, para não decorar os dados.
+
+▶ SLIDE 6 — VALIDAÇÃO
+
+Validação: medir o erro em dados que o modelo não viu no treino. Medir no próprio treino engana, porque o modelo pode ter decorado.
+
+Leave-one-season-out (LOSO): tira uma temporada inteira, treina com as outras 15 e prevê a que ficou de fora. Repete 16 vezes, uma para cada temporada. Por que por temporada e não por time? Times da mesma temporada dividem as mesmas condições (regras, ritmo de jogo, a bolha de 2020). Misturar seria uma forma de vazamento.
+
+Holdout temporal: treina com 2010-11 a 2022-23 e testa em 2023-24 a 2025-26. Responde: o modelo continua bom nos anos mais recentes?
+
+Busca aninhada de α (nested cross-validation): o α do Ridge é escolhido com uma validação dentro de cada treino, também separando por temporada. Assim a temporada de teste nunca influencia a escolha do α.
+
+Regra de 1 erro-padrão: entre todos os α cujo erro fica a até um erro-padrão do melhor, escolhe o maior (o modelo mais simples e estável). A lógica: se dois modelos são estatisticamente empatados, fique com o mais conservador.
+
+Erro-padrão: quanto uma média varia de amostra para amostra. Aqui, quanto o erro do modelo muda de uma temporada para outra.
+
+As duas métricas estão no slide 7.
+
+▶ SLIDE 7 — RESULTADOS
+
+MAE (mean absolute error, erro absoluto médio): a média de |real − previsto|, convertida para vitórias em 82 jogos. É a métrica principal.
+
+• Baseline "mantém aproveitamento" — MAE (LOSO): 7,60; O que significa: erra, em média, 7,6 vitórias por time
+• Ridge — MAE (LOSO): 5,62; O que significa: erra 5,6 vitórias por time
+• OLS / Lasso / Random Forest — MAE (LOSO): 5,50 / 5,68 / 5,72; O que significa: praticamente iguais ao Ridge
+• Holdout 2023-26 (Ridge) — MAE (LOSO): 5,35; O que significa: nos anos recentes funciona até um pouco melhor
+
+O que implica: os modelos tiram duas vitórias do erro. Duas vitórias muitas vezes separam o 6º do 7º lugar.
+
+Spearman (correlação de postos): mede se a ordem prevista bate com a ordem real, de −1 (ordem invertida) a +1 (ordem perfeita). Calculado por conferência e temporada e depois promediado.
+
+• Ridge: 0,78; baseline: 0,74.
+• 0,78 quer dizer que a classificação prevista acerta bem a ordem, mas não perfeitamente: trocas entre vizinhos são comuns.
+
+"Empatados dentro de 1 erro-padrão (0,25 vitória)": o MAE varia 0,25 vitória de temporada para temporada só por acaso. Como OLS, Ridge, Lasso e Random Forest diferem menos do que isso, não dá para dizer que um é melhor. Conclusão do slide: o ganho vem de encolher o começo, não de escolher o algoritmo.
+
+▶ SLIDE 8 — POR QUE RIDGE
+
+Correlação (de Pearson): mede se duas variáveis andam juntas, de −1 a +1. Saldo por jogo e net rating têm 0,999: são praticamente a mesma informação, só que o net rating desconta o ritmo de jogo.
+
+Multicolinearidade: quando features são quase cópias umas das outras. O OLS fica instável: pode dar qualquer combinação de pesos que some o mesmo resultado.
+
+O gráfico (coeficientes padronizados):
+
+• Saldo por jogo — OLS: +0,161; Ridge: +0,023
+• Net rating — OLS: −0,180; Ridge: +0,023
+• Pythagorean — OLS: +0,075; Ridge: +0,024
+• Aproveitamento — OLS: +0,053; Ridge: +0,036
+• Temporada anterior — OLS: +0,032; Ridge: +0,028
+• Força de tabela — OLS: +0,007; Ridge: +0,007
+
+• No OLS, net rating tem peso negativo: diria que um time com saldo melhor por posse é pior. Não faz sentido; é o OLS compensando um coeficiente com o outro.
+• O Ridge divide o peso igualmente entre as três features de pontos.
+• Força de tabela quase não pesa: depois de 15 jogos, o aproveitamento dos adversários também é ruidoso.
+
+O que implica: mesmo erro que o OLS, mas com coeficientes que dá para interpretar e que não mudam muito se os dados mudarem um pouco. Por isso escolhemos o Ridge.
+
+▶ SLIDE 9 — SIMULAÇÃO
+
+Rating: a força de cada time = o aproveitamento final que o Ridge prevê. Exemplos (com os 15 primeiros jogos):
+
+• San Antonio — Campanha nos 15: 12-3; Saldo/jogo: +11,2; Rating (Ridge): 0,727 (≈ 60 vitórias)
+• Boston — Campanha nos 15: 11-4; Saldo/jogo: +10,5; Rating (Ridge): 0,693 (≈ 57)
+• Philadelphia — Campanha nos 15: 12-3; Saldo/jogo: +2,8; Rating (Ridge): 0,592 (≈ 49)
+
+Philadelphia e San Antonio têm a mesma campanha, mas o saldo do PHI é bem menor. O modelo confia mais no saldo.
+
+σ (sigma) = 0,085: incerteza do rating. Em cada simulação, cada rating ganha um ruído aleatório com esse desvio. 0,085 × 82 ≈ 7 vitórias: a força real de um time pode estar, tipicamente, 7 vitórias acima ou abaixo do rating. Sem esse ruído, a simulação acharia que conhece a força de cada time com certeza e os intervalos ficariam estreitos demais.
+
+Regressão logística (modelo de jogo): transforma a diferença de força em probabilidade de vitória num jogo:
+
+    logit P(vitória) = 4,35 × (rating do time − rating do adversário) + 0,32 × mando
+
+• logit é a escala que a regressão logística usa: logit(p) = ln(p / (1 − p)). Converte-se de volta com p = 1 / (1 + e^(−logit)).
+• Mando = +1 em casa, −1 fora.
+• Entre times iguais, o mandante vence 57,9%: é o efeito do 0,32. Isso é a vantagem de jogar em casa.
+• Exemplo: rating 0,10 maior (≈ 8 vitórias por temporada) em quadra neutra → 4,35 × 0,10 = 0,435 → 60,7% de chance; jogando em casa → 68%.
+• Acurácia de 64,3% nos jogos históricos: acerta o vencedor em quase 2 de cada 3 jogos. Basquete tem muito acaso jogo a jogo, então isso é um valor normal.
+
+Monte Carlo: em vez de calcular as probabilidades por fórmula, sorteia a temporada inteira muitas vezes. Cada uma das 10.000 simulações sorteia os 952 jogos restantes com as chances do modelo de jogo, soma às vitórias atuais e monta a classificação. A P(top 6) de um time é a fração das 10.000 simulações em que ele terminou entre os seis primeiros.
+
+2 jogos da NBA Cup: os jogos marcados somam 80 por time; os outros 2 dependem do mata-mata da NBA Cup e ainda não têm adversário. Simulamos contra um adversário médio, em quadra neutra.
+
+Saídas:
+
+• Vitórias esperadas: a média das vitórias nas 10.000 simulações.
+• Intervalo de 80% (IC80): da 10ª à 90ª percentil das vitórias simuladas. Philadelphia: 44 a 60 vitórias. Quer dizer: em 80% das simulações, o PHI termina nessa faixa.
+• P(top 6), P(play-in), P(fora): somam 100% para cada time.
+
+▶ SLIDE 10 — BACKTEST
+
+Backtest: testar o método no passado, como se estivéssemos naquele momento. Para cada uma das 16 temporadas, voltamos ao dia em que o último time completou 15 jogos e simulamos o resto, sem usar aquela temporada no treino (rating, modelo de jogo e σ reajustados sem ela). Depois comparamos com o que aconteceu de verdade.
+
+Cobertura do intervalo de 80% = 81%: o intervalo de 80% continha as vitórias reais em 81% dos 480 times-temporada.
+
+• Se desse 60%, os intervalos seriam estreitos demais (modelo confiante demais).
+• Se desse 95%, seriam largos demais (modelo inseguro demais).
+• 81% perto de 80% quer dizer que a incerteza está bem medida.
+
+Brier score (de 3 classes): mede o erro das probabilidades. Para cada time, soma (probabilidade prevista − resultado)² nas três classes (top 6, play-in, fora), em que o resultado é 1 se aconteceu e 0 se não. Vai de 0 (perfeito) a 2 (pior possível). Menor é melhor.
+
+• Exemplo: o modelo deu 90% de top 6, 9% de play-in e 1% de fora, e o time ficou no top 6: (0,90 − 1)² + (0,09 − 0)² + (0,01 − 0)² = 0,018. Ótimo.
+• Simulação: 0,42.
+• Referência: 0,66, que é o Brier de chutar sempre as proporções fixas 6/15, 4/15 e 5/15 para todo time.
+• O que implica: as probabilidades do modelo são bem melhores do que não saber nada.
+
+Calibração (o gráfico no artigo): quando o modelo diz 30%, o evento acontece cerca de 30% das vezes. É isso que "acerta 81% quando diz 80%" resume.
+
+▶ SLIDE 11 — VERSÕES V0, V5, V10, V15
+
+O que são: o pipeline inteiro refeito em quatro datas da temporada 2026-27, cada uma com o que se sabia naquele dia.
+
+• V0 — Data: 19/10 (véspera da estreia); O que o modelo usa: só a temporada anterior; Brier backtest: 0,533; Erro nas vitórias finais: 7,8; Cobertura IC80: 87%
+• V5 — Data: 02/11; O que o modelo usa: 5 primeiros jogos; Brier backtest: 0,488; Erro nas vitórias finais: 7,0; Cobertura IC80: 81%
+• V10 — Data: 11/11; O que o modelo usa: 10 primeiros jogos; Brier backtest: 0,444; Erro nas vitórias finais: 6,0; Cobertura IC80: 79%
+• V15 — Data: 22/11; O que o modelo usa: 15 primeiros jogos; Brier backtest: 0,421; Erro nas vitórias finais: 5,3; Cobertura IC80: 81%
+
+"Erro nas vitórias finais" aqui é o MAE do backtest: a diferença média entre as vitórias esperadas da simulação e as vitórias reais. É um pouco menor que o 5,6 do slide 7 porque a simulação já soma as vitórias que o time tem no dia.
+
+O que implica:
+
+• Cada bloco de 5 jogos melhora a previsão, e a melhora é maior no começo.
+• Na V0 a cobertura é de 87%: os intervalos são um pouco largos, porque o modelo sabe pouco.
+• A partir da V5 a incerteza já fica bem medida (cobertura perto de 80%).
+
+Times que mudaram de patamar: o Memphis vinha de 25 vitórias e começou 11-4, com saldo forte; saiu de 33 para 48 vitórias esperadas (P(top 6) de 14% para 48%). O Toronto subiu para 49 na V5 e caiu para 38 na V15: um bom começo que não se sustentou. Por isso não dá para confiar numa foto só.
+
+▶ SLIDE 12 — PROJEÇÃO 2026-27
+
+Heatmap: cada linha é um time, cada coluna uma posição final (1 a 15), e o número é a % das simulações em que o time terminou naquela posição. A linha vermelha contínua marca o corte do top 6; a tracejada, o do play-in.
+
+• Boston — Campanha: 11-6; Vitórias esperadas: 55,8; IC80: 48–63; P(top 6): 97%; P(play-in): 3%; P(fora): 0%
+• San Antonio — Campanha: 14-3; Vitórias esperadas: 58,9; IC80: 51–66; P(top 6): 95%; P(play-in): 5%; P(fora): 0%
+• Philadelphia — Campanha: 14-3; Vitórias esperadas: 52,4; IC80: 44–60; P(top 6): 90%; P(play-in): 9%; P(fora): 0%
+• Memphis — Campanha: 12-5; Vitórias esperadas: 48,5; IC80: 40–57; P(top 6): 48%; P(play-in): 46%; P(fora): 6%
+
+Como ler o caso do Philadelphia: a campanha (14-3) projetaria uns 67 vitórias se fosse mantida. O modelo projeta 52,4 porque o saldo de pontos (+2,8 por jogo) é de um time bom, não de um candidato ao título. As 14 vitórias já conquistadas contam; o que o modelo encolhe é o ritmo daqui para frente.
+
+Boston com campanha pior que o PHI e chance maior: saldo de +10,5 por jogo e boa temporada anterior (0,683). O modelo entende que o Boston é mais forte do que a campanha mostra.
+
+▶ SLIDE 13 — LIÇÕES
+
+• Validar por temporada, sem vazamento: o motivo de os números serem confiáveis.
+• Modelo linear simples empatou com a floresta: com 480 observações e uma relação quase linear (slide 4), um modelo complexo não tem o que aprender a mais.
+• Testar a simulação no passado: o backtest (slide 10) é o que mostra que as probabilidades fazem sentido.
+• Com 5 jogos o erro já cai de 13,3 para 7,2: análise de sensibilidade. Com 5 jogos, manter o aproveitamento erra 13,3 vitórias (o começo é puro ruído); o Ridge erra 7,2, quase a metade. O modelo é mais útil justamente quando há menos informação.
+
+Próxima vez:
+
+• Lesões, trocas e elenco: o modelo supõe que cada time segue com o elenco dos primeiros jogos. Um titular fora por um mês muda mais do que o erro médio.
+• Versões de 20, 25, 30 jogos: continuar acompanhando a temporada.
+• Rating atualizado a cada jogo: hoje o rating usa só os 15 primeiros jogos de cada time.
+• Desempates oficiais: hoje empates na classificação são desfeitos por sorteio.
+
+▶ SLIDE 14 — PARA LEVAR
+
+"Confie na campanha, mas encolha antes": a campanha tem informação, mas precisa ser puxada para a média e combinada com o saldo de pontos e a temporada anterior.
+
+Projeto vivo: os dados vêm direto da API da NBA. Rodando python src/coleta.py --refresh-current e o notebook de novo, tudo é recalculado com os jogos mais recentes.
+
+Uso de IA: código e textos feitos com apoio do Claude (Anthropic, modelo Opus), pelo Claude Code. A declaração completa está no fim do artigo.
+
+▶ GLOSSÁRIO RÁPIDO
+
+• Aproveitamento: vitórias / jogos → PHI 14-3 = 0,824
+• α (alfa): força da penalidade do Ridge → 100
+• Backtest: testar o método no passado, sem usar aquele ano no treino → 16 temporadas
+• Baseline: modelo simples usado como régua → MAE 7,60
+• Brier score: erro das probabilidades (0 = perfeito; menor é melhor) → 0,42 (referência 0,66)
+• Calibração: o modelo dizer 30% e acontecer ~30% das vezes → cobertura 81% para 80%
+• Coeficiente: peso de cada feature no modelo linear → Ridge ≈ 0,023 nas de pontos
+• Cobertura: % de vezes que o resultado real caiu no intervalo → 81%
+• Erro-padrão: quanto uma média varia por acaso → 0,25 vitória
+• Feature: variável de entrada do modelo → 6
+• Holdout temporal: treinar no passado, testar nos anos recentes → MAE 5,35
+• Intervalo de 80% (IC80): faixa entre os percentis 10 e 90 das simulações → PHI 44–60
+• Lasso: regressão com penalidade L1, pode zerar coeficientes → MAE 5,68
+• Logit: escala log-odds da regressão logística, ln(p/(1−p)) → b_diff 4,35; b_casa 0,32
+• LOSO: deixa uma temporada de fora por vez → 16 rodadas
+• MAE: erro absoluto médio, em vitórias → Ridge 5,62
+• Monte Carlo: sortear a temporada muitas vezes e contar os resultados → 10.000 simulações
+• Multicolinearidade: features quase iguais entre si → saldo × net rating: 0,999
+• Net rating: saldo de pontos a cada 100 posses → PHI +2,7
+• OLS: regressão linear por mínimos quadrados → MAE 5,50
+• Pythagorean: aproveitamento "merecido" pelos pontos, PF¹⁴/(PF¹⁴+PA¹⁴) → MAE 6,83 como baseline
+• Random Forest: média de muitas árvores de decisão → MAE 5,72
+• Rating: força prevista do time (aproveitamento final do Ridge) → SAS 0,727
+• Regra de 1 erro-padrão: entre modelos empatados, fique com o mais simples → escolheu α = 100
+• Regressão à média: começos extremos voltam para perto da média → inclinação 0,63
+• Regressão logística: transforma diferença de força em probabilidade → mandante 57,9% entre iguais
+• Ridge: regressão linear com penalidade L2 → modelo escolhido
+• σ (sigma): incerteza do rating → 0,085 (≈ 7 vitórias)
+• Spearman: se a ordem prevista bate com a real (−1 a 1) → 0,78
+• Vazamento: usar informação do futuro sem querer → corte no 15º jogo
