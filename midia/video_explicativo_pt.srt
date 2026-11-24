@@ -1,0 +1,695 @@
+1
+00:00:00,550 --> 00:00:01,887
+Olá!
+
+2
+00:00:01,837 --> 00:00:10,637
+Neste vídeo vamos mostrar, passo a passo, o projeto final de Aprendizado de Máquina da UFABC: quinze jogos não são uma temporada.
+
+3
+00:00:10,637 --> 00:00:16,312
+A ideia é prever como a temporada regular da NBA vai terminar quando ela mal começou.
+
+4
+00:00:16,312 --> 00:00:28,062
+Vamos passar por quatro partes: o tema, as bases de dados e as fontes, a metodologia e, por fim, os resultados e as análises, mostrando o que foi construído em cada etapa.
+
+5
+00:00:29,420 --> 00:00:31,795
+Primeira parte: o tema.
+
+6
+00:00:33,120 --> 00:00:36,232
+Tudo começa com uma pergunta simples.
+
+7
+00:00:36,182 --> 00:00:39,107
+O Philadelphia está catorze a três.
+
+8
+00:00:39,107 --> 00:00:41,845
+Isso é um time bom ou é sorte?
+
+9
+00:00:41,845 --> 00:00:46,420
+A temporada regular da NBA tem oitenta e dois jogos por time.
+
+10
+00:00:46,420 --> 00:00:54,520
+Com uns quinze jogos, cada time disputou menos de vinte por cento da temporada, e a classificação de novembro ainda engana muito.
+
+11
+00:00:54,520 --> 00:01:10,332
+O projeto quer responder, para cada time, quantas vitórias ele deve ter no fim e qual a chance de terminar no top seis da conferência, que dá vaga direta nos playoffs, no play-in, do sétimo ao décimo lugar, ou fora, do décimo primeiro ao décimo quinto.
+
+12
+00:01:11,690 --> 00:01:15,240
+No fim, o projeto entrega quatro coisas.
+
+13
+00:01:15,190 --> 00:01:20,502
+As vitórias esperadas de cada time, com um intervalo de oitenta por cento.
+
+14
+00:01:20,502 --> 00:01:25,540
+As probabilidades de top seis, play-in e fora, para os trinta times.
+
+15
+00:01:25,540 --> 00:01:34,927
+Quatro versões da previsão, feitas antes da estreia e depois de cinco, dez e quinze jogos, para mostrar quanto cada bloco de partidas acrescenta.
+
+16
+00:01:34,927 --> 00:01:44,727
+E é um projeto vivo: como os dados vêm direto da API da NBA, basta rodar o pipeline de novo para atualizar a previsão em qualquer momento da temporada.
+
+17
+00:01:44,727 --> 00:01:50,177
+Os números deste vídeo são uma foto de vinte e dois de novembro de 2026.
+
+18
+00:01:51,530 --> 00:01:55,617
+Segunda parte: as bases de dados e as fontes.
+
+19
+00:01:56,930 --> 00:02:07,555
+Todos os dados vêm da API pública de estatísticas da NBA, o site stats ponto nba ponto com, acessada pela biblioteca Python nba underline api.
+
+20
+00:02:07,505 --> 00:02:09,880
+Usamos dois endpoints.
+
+21
+00:02:09,880 --> 00:02:21,742
+O League Game Log traz o registro de cada jogo da temporada regular, uma linha por time por jogo, com data, adversário, mando, resultado, pontos e estatísticas de arremesso.
+
+22
+00:02:21,742 --> 00:02:26,755
+Baixamos dezessete temporadas, de 2009 a 2027.
+
+23
+00:02:26,755 --> 00:02:34,717
+E o Schedule League V2 traz o calendário da temporada atual, de onde saem os novecentos e cinquenta e dois jogos que ainda faltam.
+
+24
+00:02:34,717 --> 00:02:38,742
+Cada arquivo fica salvo em cache na pasta data barra raw.
+
+25
+00:02:38,742 --> 00:02:45,317
+A primeira coleta leva uns dez minutos, a uma requisição por segundo; depois disso, tudo é local.
+
+26
+00:02:46,700 --> 00:02:51,250
+Este é o coração da coleta, no arquivo coleta ponto py.
+
+27
+00:02:51,200 --> 00:02:55,525
+Se o arquivo da temporada já existe, ele é lido do cache.
+
+28
+00:02:55,525 --> 00:03:02,425
+Se não, a função chama o endpoint da NBA, filtrando a temporada regular e os dados por time.
+
+29
+00:03:02,425 --> 00:03:11,775
+Como a API às vezes recusa conexões ou demora, cada chamada passa por uma função de retry, que tenta de novo com uma espera que dobra a cada falha.
+
+30
+00:03:11,775 --> 00:03:17,412
+Para atualizar a temporada atual, basta rodar a coleta com a opção refresh current.
+
+31
+00:03:18,770 --> 00:03:27,770
+Depois da coleta, os game logs viram uma base única, o games ponto csv, com trinta e oito mil setecentas e trinta e quatro linhas.
+
+32
+00:03:27,720 --> 00:03:38,382
+Cada jogo aparece duas vezes, uma para cada time, e na mesma linha juntamos as estatísticas do adversário, porque elas são necessárias para estimar as posses de bola.
+
+33
+00:03:38,382 --> 00:03:44,432
+A base histórica tem dezesseis temporadas completas, de 2010 a 2026.
+
+34
+00:03:44,432 --> 00:03:48,982
+Com trinta times, são quatrocentos e oitenta times-temporada.
+
+35
+00:03:48,982 --> 00:03:52,320
+Cada time em cada temporada é uma observação.
+
+36
+00:03:52,320 --> 00:03:58,645
+Isso é pouco para aprendizado de máquina, e essa limitação vai influenciar a escolha dos modelos.
+
+37
+00:04:00,000 --> 00:04:06,250
+Na fase dois, o arquivo features ponto py transforma os jogos em variáveis de entrada.
+
+38
+00:04:06,200 --> 00:04:12,975
+O ponto principal está na terceira linha: numeramos os jogos de cada time e guardamos só os N primeiros.
+
+39
+00:04:12,975 --> 00:04:18,087
+N é o menor número de jogos disputados por um time hoje, que dá quinze.
+
+40
+00:04:18,087 --> 00:04:25,187
+Isso evita vazamento de dados, ou seja, usar sem querer uma informação que não existiria no dia da previsão.
+
+41
+00:04:25,187 --> 00:04:30,825
+Até a força de tabela é calculada só com jogos até a data de corte de cada time.
+
+42
+00:04:30,825 --> 00:04:42,587
+As posses de bola são estimadas pela fórmula clássica: arremessos tentados, mais zero vírgula quarenta e quatro vezes os lances livres, menos os rebotes ofensivos, mais os erros.
+
+43
+00:04:43,940 --> 00:04:46,102
+São seis features.
+
+44
+00:04:46,052 --> 00:04:49,952
+O aproveitamento, vitórias divididas por jogos.
+
+45
+00:04:49,952 --> 00:04:52,515
+O saldo de pontos por jogo.
+
+46
+00:04:52,515 --> 00:04:57,652
+O net rating, que é o saldo a cada cem posses e corrige o ritmo de jogo.
+
+47
+00:04:57,652 --> 00:05:03,665
+A expectativa pitagórica, que estima as vitórias merecidas pelos pontos feitos e sofridos.
+
+48
+00:05:03,665 --> 00:05:08,365
+A força de tabela, o aproveitamento médio dos adversários.
+
+49
+00:05:08,365 --> 00:05:11,502
+E o aproveitamento da temporada anterior.
+
+50
+00:05:11,502 --> 00:05:20,765
+Veja o Philadelphia: zero vírgula oitocentos de aproveitamento nos quinze primeiros jogos, mas só zero vírgula quinhentos e oitenta e seis pela pitagórica.
+
+51
+00:05:20,765 --> 00:05:28,540
+O alvo é o aproveitamento final, e não o número de vitórias, porque três temporadas tiveram menos de oitenta e dois jogos.
+
+52
+00:05:28,540 --> 00:05:35,115
+Para facilitar a leitura, os erros são convertidos para vitórias, multiplicando por oitenta e dois.
+
+53
+00:05:36,480 --> 00:05:40,692
+Antes de modelar, olhamos a correlação entre as features.
+
+54
+00:05:40,642 --> 00:05:49,117
+As três baseadas em pontos, saldo, net rating e pitagórica, têm correlação acima de zero vírgula noventa e nove entre si.
+
+55
+00:05:49,117 --> 00:05:55,967
+Saldo e net rating chegam a zero vírgula novecentos e noventa e nove: são praticamente a mesma informação.
+
+56
+00:05:55,967 --> 00:06:01,080
+Isso se chama multicolinearidade, e vai ser decisivo na escolha do modelo.
+
+57
+00:06:02,450 --> 00:06:05,612
+Terceira parte: a metodologia.
+
+58
+00:06:06,920 --> 00:06:12,670
+O trabalho foi organizado como um pipeline de sete scripts Python, um por fase.
+
+59
+00:06:12,620 --> 00:06:19,545
+Coleta, features, modelos, simulação, versões, sensibilidade e resumo.
+
+60
+00:06:19,545 --> 00:06:27,432
+O notebook projeto ponto ipynb chama esses scripts na ordem e roda o pipeline inteiro, com explicações entre as etapas.
+
+61
+00:06:27,432 --> 00:06:36,032
+A semente aleatória é fixa em quarenta e dois, para que tudo seja reproduzível, e todas as figuras são geradas em português e em inglês.
+
+62
+00:06:36,032 --> 00:06:41,607
+No final, outro script gera as tabelas do artigo e outro monta os slides.
+
+63
+00:06:42,990 --> 00:06:46,015
+Este gráfico é o centro do trabalho.
+
+64
+00:06:45,965 --> 00:06:48,665
+Cada ponto é um time-temporada.
+
+65
+00:06:48,665 --> 00:06:55,652
+No eixo horizontal, o aproveitamento depois de quinze jogos; no vertical, o aproveitamento final.
+
+66
+00:06:55,652 --> 00:07:00,777
+Se o começo dissesse tudo, os pontos estariam na diagonal tracejada.
+
+67
+00:07:00,777 --> 00:07:02,390
+Não estão.
+
+68
+00:07:02,390 --> 00:07:11,827
+A reta ajustada tem inclinação zero vírgula sessenta e três: cada ponto acima de zero vírgula quinhentos no começo vale só sessenta e três por cento no fim.
+
+69
+00:07:11,827 --> 00:07:18,065
+É a regressão à média: um time que começa doze a três provavelmente teve um pouco de sorte.
+
+70
+00:07:18,065 --> 00:07:25,302
+O desvio-padrão também cai, de zero vírgula dezenove depois de quinze jogos para zero vírgula quinze no fim.
+
+71
+00:07:25,302 --> 00:07:30,640
+Conclusão: qualquer previsão boa precisa encolher o começo em direção à média.
+
+72
+00:07:32,000 --> 00:07:37,250
+Comparamos dois baselines, que servem de régua, com quatro modelos.
+
+73
+00:07:37,200 --> 00:07:42,175
+O primeiro baseline supõe que o time mantém o aproveitamento atual até o fim.
+
+74
+00:07:42,175 --> 00:07:46,550
+O segundo usa a fórmula pitagórica, com expoente catorze.
+
+75
+00:07:46,550 --> 00:08:08,900
+Os modelos são a regressão linear por mínimos quadrados; o Ridge, que é a regressão linear com uma penalidade L2 sobre o tamanho dos coeficientes, controlada pelo parâmetro alfa; o Lasso, com penalidade L1, que pode zerar coeficientes; e uma Random Forest de quinhentas árvores, com pelo menos dez times por folha, para não decorar os dados.
+
+76
+00:08:08,900 --> 00:08:12,237
+As features são padronizadas antes do treino.
+
+77
+00:08:13,600 --> 00:08:18,700
+Para não nos enganarmos, toda métrica é medida em dados que o modelo não viu.
+
+78
+00:08:18,650 --> 00:08:27,587
+Usamos o leave-one-season-out: tiramos uma temporada inteira, treinamos com as outras quinze e prevemos a que ficou de fora, dezesseis vezes.
+
+79
+00:08:27,587 --> 00:08:35,887
+Separar por temporada, e não por time, é importante, porque times da mesma temporada dividem as mesmas condições.
+
+80
+00:08:35,887 --> 00:08:43,037
+Também fizemos um holdout temporal: treino até 2023 e teste nas três temporadas mais recentes.
+
+81
+00:08:43,037 --> 00:08:50,712
+E o alfa do Ridge é escolhido numa validação interna, também por temporada, para que o teste nunca influencie a escolha.
+
+82
+00:08:52,070 --> 00:08:56,095
+No código, isso aparece em modelos ponto py.
+
+83
+00:08:56,045 --> 00:09:03,857
+A classe Tuned faz uma busca em grade com GroupKFold, em que os grupos são as temporadas, e mede o erro absoluto médio.
+
+84
+00:09:03,857 --> 00:09:16,432
+Em vez de pegar o alfa com o menor erro, usamos a regra de um erro-padrão: entre todos os alfas cujo erro fica a até um erro-padrão do melhor, escolhemos o maior, que é o modelo mais simples e estável.
+
+85
+00:09:16,432 --> 00:09:22,082
+Se dois modelos estão estatisticamente empatados, ficamos com o mais conservador.
+
+86
+00:09:22,082 --> 00:09:24,432
+O alfa escolhido foi cem.
+
+87
+00:09:25,800 --> 00:09:31,850
+A regressão prevê o aproveitamento final, mas o objetivo são as chances de top seis.
+
+88
+00:09:31,800 --> 00:09:36,600
+Para isso, a previsão do Ridge vira o rating, a força de cada time.
+
+89
+00:09:36,600 --> 00:09:48,062
+O San Antonio tem rating zero vírgula setecentos e vinte e sete, e o Philadelphia, com a mesma campanha, só zero vírgula quinhentos e noventa e dois, porque o saldo dele é bem menor.
+
+90
+00:09:48,062 --> 00:09:56,637
+Uma regressão logística, treinada nos jogos históricos, transforma a diferença de rating e o mando de quadra na chance de vitória em cada jogo.
+
+91
+00:09:56,637 --> 00:10:01,812
+Entre times iguais, o mandante vence cinquenta e oito por cento das vezes.
+
+92
+00:10:01,812 --> 00:10:12,187
+Cada rating ainda ganha um ruído com desvio sigma de zero vírgula zero oitenta e cinco, cerca de sete vitórias, porque não conhecemos a força real de ninguém com certeza.
+
+93
+00:10:13,540 --> 00:10:18,365
+Esta é a simulação de Monte Carlo, em simulacao ponto py.
+
+94
+00:10:18,315 --> 00:10:24,977
+Em vez de calcular as probabilidades por fórmula, sorteamos o resto da temporada dez mil vezes.
+
+95
+00:10:24,977 --> 00:10:28,577
+Primeiro, cada time recebe um ruído no rating.
+
+96
+00:10:28,577 --> 00:10:38,565
+Depois, para cada um dos novecentos e cinquenta e dois jogos restantes, o modelo logístico dá a chance de o mandante vencer, e um número aleatório decide o jogo.
+
+97
+00:10:38,565 --> 00:10:44,227
+Tudo é vetorizado em NumPy, então as dez mil temporadas rodam em segundos.
+
+98
+00:10:44,227 --> 00:10:55,752
+Somamos as vitórias atuais, montamos a classificação de cada conferência e contamos: a probabilidade de top seis de um time é a fração das simulações em que ele terminou entre os seis primeiros.
+
+99
+00:10:55,752 --> 00:11:02,977
+Os dois jogos da NBA Cup que ainda não têm adversário são simulados contra um time médio, em quadra neutra.
+
+100
+00:11:04,350 --> 00:11:07,212
+Mas dá para confiar nessas chances?
+
+101
+00:11:07,162 --> 00:11:10,387
+Para responder, fizemos um backtest.
+
+102
+00:11:10,387 --> 00:11:20,737
+Para cada uma das dezesseis temporadas passadas, voltamos ao dia em que o último time completou quinze jogos e simulamos o resto, sem usar aquela temporada no treino.
+
+103
+00:11:20,737 --> 00:11:23,787
+Depois comparamos com o que aconteceu.
+
+104
+00:11:23,787 --> 00:11:31,537
+O intervalo de oitenta por cento conteve as vitórias reais em oitenta e um por cento dos casos: a incerteza está bem medida.
+
+105
+00:11:31,537 --> 00:11:41,912
+E o Brier score, que mede o erro das probabilidades, foi zero vírgula quarenta e dois, contra zero vírgula sessenta e seis de quem chuta sempre as proporções fixas.
+
+106
+00:11:41,912 --> 00:11:44,162
+Quanto menor, melhor.
+
+107
+00:11:45,530 --> 00:11:49,330
+A curva de calibração mostra o mesmo de outro jeito.
+
+108
+00:11:49,280 --> 00:11:55,467
+Agrupamos as previsões do backtest por faixa de probabilidade e comparamos com a frequência real.
+
+109
+00:11:55,467 --> 00:12:04,217
+Os pontos ficam perto da diagonal: quando a simulação diz trinta por cento, o evento acontece mais ou menos trinta por cento das vezes.
+
+110
+00:12:05,570 --> 00:12:08,820
+Duas análises completam a metodologia.
+
+111
+00:12:08,770 --> 00:12:25,595
+Nas versões, o pipeline inteiro, com features, Ridge, modelo de jogo, sigma, backtest e simulação, é refeito em quatro datas da temporada, cada uma só com o que se sabia naquele dia: antes da estreia, e depois de cinco, dez e quinze jogos.
+
+112
+00:12:25,595 --> 00:12:34,057
+E na análise de sensibilidade repetimos a validação com N de cinco a quarenta e um jogos, para ver como o erro cai com mais informação.
+
+113
+00:12:35,440 --> 00:12:39,015
+Quarta parte: os resultados e as análises.
+
+114
+00:12:40,340 --> 00:12:42,540
+O resultado principal.
+
+115
+00:12:42,490 --> 00:12:48,415
+Manter o aproveitamento atual erra, em média, sete vírgula seis vitórias por time.
+
+116
+00:12:48,415 --> 00:12:51,215
+O Ridge erra cinco vírgula seis.
+
+117
+00:12:51,215 --> 00:12:57,540
+São duas vitórias a menos, e duas vitórias muitas vezes separam o sexto do sétimo lugar.
+
+118
+00:12:57,540 --> 00:13:03,640
+No holdout das temporadas recentes, o Ridge erra ainda menos: cinco vírgula trinta e cinco.
+
+119
+00:13:03,640 --> 00:13:12,765
+A correlação de Spearman, que mede se a ordem prevista bate com a real, sobe de zero vírgula setenta e quatro para zero vírgula setenta e oito.
+
+120
+00:13:12,765 --> 00:13:22,627
+E um detalhe importante: regressão linear, Ridge, Lasso e Random Forest ficaram empatados dentro de um erro-padrão, de zero vírgula vinte e cinco vitória.
+
+121
+00:13:22,627 --> 00:13:27,790
+Ou seja, o ganho vem de encolher o começo, não de escolher o algoritmo.
+
+122
+00:13:29,170 --> 00:13:35,070
+Aqui está a comparação visual entre o baseline e o modelo, nas previsões fora da amostra.
+
+123
+00:13:35,020 --> 00:13:42,807
+À esquerda, manter o aproveitamento gera previsões espalhadas demais, com começos extremos levados ao pé da letra.
+
+124
+00:13:42,807 --> 00:13:49,770
+À direita, o Ridge comprime as previsões em direção à média, e os pontos ficam mais perto da diagonal.
+
+125
+00:13:51,140 --> 00:13:55,827
+Por que escolher o Ridge, se a regressão linear teve erro um pouco menor?
+
+126
+00:13:55,777 --> 00:13:58,452
+Por causa dos coeficientes.
+
+127
+00:13:58,452 --> 00:14:07,115
+Com saldo e net rating quase idênticos, a regressão linear dá mais zero vírgula dezesseis para um e menos zero vírgula dezoito para o outro.
+
+128
+00:14:07,115 --> 00:14:15,415
+Isso diria que um time com saldo melhor por posse é pior, o que não faz sentido: é o modelo compensando um coeficiente com o outro.
+
+129
+00:14:15,415 --> 00:14:22,240
+O Ridge divide o peso igualmente entre as três features de pontos, cerca de zero vírgula zero dois três cada.
+
+130
+00:14:22,240 --> 00:14:25,102
+A força de tabela quase não pesa.
+
+131
+00:14:25,102 --> 00:14:29,565
+Mesmo erro, mas coeficientes interpretáveis e estáveis.
+
+132
+00:14:30,940 --> 00:14:35,327
+A análise de sensibilidade mostra quando o modelo é mais útil.
+
+133
+00:14:35,277 --> 00:14:42,865
+Com só cinco jogos, manter o aproveitamento erra treze vírgula três vitórias, porque o começo é quase puro ruído.
+
+134
+00:14:42,865 --> 00:14:46,752
+O Ridge erra sete vírgula dois, quase a metade.
+
+135
+00:14:46,752 --> 00:14:54,202
+Conforme a temporada avança, as duas curvas se aproximam: com quarenta e um jogos, a diferença é pequena.
+
+136
+00:14:54,202 --> 00:14:58,152
+O modelo vale mais justamente quando há menos informação.
+
+137
+00:14:59,520 --> 00:15:03,782
+Nas versões, o backtest de cada data mostra a melhora.
+
+138
+00:15:03,732 --> 00:15:14,582
+O Brier cai de zero vírgula cinquenta e três na pré-temporada para zero vírgula quarenta e nove com cinco jogos, zero vírgula quarenta e quatro com dez e zero vírgula quarenta e dois com quinze.
+
+139
+00:15:14,582 --> 00:15:19,832
+O erro nas vitórias finais cai de sete vírgula oito para cinco vírgula três.
+
+140
+00:15:19,832 --> 00:15:23,382
+A linha tracejada é a referência de não saber nada.
+
+141
+00:15:23,382 --> 00:15:35,370
+A cobertura do intervalo de oitenta por cento fica perto de oitenta a partir da versão de cinco jogos; na pré-temporada é de oitenta e sete, porque o modelo sabe pouco e os intervalos ficam largos.
+
+142
+00:15:36,720 --> 00:15:41,020
+E dá para ver times mudando de patamar ao longo das versões.
+
+143
+00:15:40,970 --> 00:15:53,895
+O Memphis, que vinha de vinte e cinco vitórias, começou onze a quatro com saldo forte: saiu de trinta e três para quarenta e oito vitórias esperadas, e a chance de top seis foi de catorze para quarenta e oito por cento.
+
+144
+00:15:53,895 --> 00:16:02,207
+Já o Toronto subiu para quarenta e nove na versão de cinco jogos e caiu para trinta e oito na de quinze: um bom começo que não se sustentou.
+
+145
+00:16:02,207 --> 00:16:05,532
+Por isso não dá para confiar numa foto só.
+
+146
+00:16:06,890 --> 00:16:09,315
+Esta é a projeção atual.
+
+147
+00:16:09,265 --> 00:16:15,090
+No mapa de calor, cada linha é um time e cada coluna uma posição final, de um a quinze.
+
+148
+00:16:15,090 --> 00:16:20,190
+O número é a porcentagem das simulações em que o time terminou naquela posição.
+
+149
+00:16:20,190 --> 00:16:25,665
+A linha contínua marca o corte do top seis, e a tracejada, o do play-in.
+
+150
+00:16:25,665 --> 00:16:35,090
+No topo, as distribuições ficam concentradas; no meio da tabela, espalhadas por várias posições, que é onde está a incerteza de verdade.
+
+151
+00:16:36,460 --> 00:16:38,485
+Alguns destaques.
+
+152
+00:16:38,435 --> 00:16:47,147
+Boston tem noventa e sete por cento de chance de top seis, e San Antonio, noventa e cinco, com cinquenta e nove vitórias esperadas.
+
+153
+00:16:47,147 --> 00:16:50,472
+E o Philadelphia, com catorze a três?
+
+154
+00:16:50,472 --> 00:16:54,660
+Mantida a campanha, seriam umas sessenta e sete vitórias.
+
+155
+00:16:54,660 --> 00:17:06,422
+O modelo projeta cinquenta e duas vírgula quatro, com intervalo de quarenta e quatro a sessenta, porque o saldo de mais dois vírgula oito por jogo é de um time bom, não de um candidato ao título.
+
+156
+00:17:06,422 --> 00:17:12,010
+As vitórias já conquistadas contam; o que o modelo encolhe é o ritmo daqui para frente.
+
+157
+00:17:12,010 --> 00:17:19,910
+O Boston, com campanha pior, tem chance maior: saldo de mais dez vírgula cinco por jogo e boa temporada anterior.
+
+158
+00:17:19,910 --> 00:17:25,722
+O Memphis está no limite, com quarenta e oito por cento de top seis e quarenta e seis de play-in.
+
+159
+00:17:27,090 --> 00:17:29,065
+O que aprendemos.
+
+160
+00:17:29,015 --> 00:17:34,690
+Validar por temporada, sem vazamento, é o que torna os números confiáveis.
+
+161
+00:17:34,690 --> 00:17:45,502
+Um modelo linear simples empatou com a floresta aleatória: com quatrocentas e oitenta observações e uma relação quase linear, um modelo complexo não tem o que aprender a mais.
+
+162
+00:17:45,502 --> 00:17:51,040
+E testar a simulação no passado é o que mostra que as probabilidades fazem sentido.
+
+163
+00:17:51,040 --> 00:18:03,540
+As limitações: lesões, trocas e mudanças de elenco não são modeladas, o rating usa só os quinze primeiros jogos de cada time e os desempates são sorteados, e não pelos critérios oficiais.
+
+164
+00:18:03,540 --> 00:18:09,965
+Ficam como próximos passos, junto com novas versões de vinte, vinte e cinco e trinta jogos.
+
+165
+00:18:11,320 --> 00:18:14,320
+Para fechar, o que foi construído.
+
+166
+00:18:14,270 --> 00:18:19,720
+O código, com o notebook que roda o pipeline inteiro e os sete scripts.
+
+167
+00:18:19,720 --> 00:18:28,357
+Um artigo no formato IEEE, em português e em inglês, escrito em LaTeX, com as tabelas e figuras geradas direto dos resultados.
+
+168
+00:18:28,357 --> 00:18:35,582
+A apresentação de catorze slides, nos dois idiomas, com o roteiro de fala e um guia que explica cada termo.
+
+169
+00:18:35,582 --> 00:18:40,632
+E a pasta de resultados, com as tabelas, as figuras e um resumo.
+
+170
+00:18:40,632 --> 00:18:51,857
+O código e os textos foram feitos com apoio do Claude, da Anthropic; os autores definiram a pergunta, os dados, os modelos e a validação, e conferiram os resultados.
+
+171
+00:18:53,220 --> 00:18:58,595
+A mensagem para levar é esta: confie na campanha, mas encolha antes.
+
+172
+00:18:58,545 --> 00:19:06,770
+O começo da temporada tem informação, mas precisa ser puxado para a média e combinado com o saldo de pontos e a temporada anterior.
+
+173
+00:19:06,770 --> 00:19:11,670
+E, como o projeto é vivo, é só rodar de novo para atualizar.
+
+174
+00:19:11,670 --> 00:19:13,970
+Obrigado por assistir!

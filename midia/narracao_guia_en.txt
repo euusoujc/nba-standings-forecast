@@ -1,0 +1,291 @@
+### 00 — Introduction
+Audio study guide for the presentation: fifteen games are not a season.
+
+This audio follows the fourteen slides of the presentation, in the same order, and explains what each term and each metric means. The talk script says what to say in five minutes. This guide goes further: it explains what everything means, so you know the material and can answer questions. All numbers are from the November twenty-second, 2026 snapshot, with N equal to fifteen games.
+
+For each term, the explanation follows the same logic: what it is, its value in the project, and what that implies.
+
+### 01 — Slide 1: Title
+Slide one, the title.
+
+Fifteen games are not a season. An NBA regular season has eighty-two games per team. After fifteen, each team has played less than twenty percent of it. The title sums up the thesis: fifteen games tell you a lot, but the November standings should not be taken at face value.
+
+The subtitle mentions Ridge and Monte Carlo, the two parts of the method. Ridge estimates each team's strength. Monte Carlo turns that strength into standings odds. Both are explained on slides five, eight and nine.
+
+### 02 — Slide 2: The question
+Slide two, the question.
+
+Win percentage is wins divided by games. Philadelphia, with fourteen wins and three losses, is at fourteen divided by seventeen, which is point eight two four.
+
+Top six, play-in or out. Each conference, East and West, has fifteen teams.
+Teams that finish first through sixth, the top six, get a direct playoff berth.
+Teams that finish seventh through tenth go to the play-in, a mini tournament that decides the last two spots.
+And teams that finish eleventh through fifteenth are out, eliminated.
+
+P of top six is the probability that a team finishes in the top six. That, along with expected wins, is what the project delivers.
+
+### 03 — Slide 3: Data
+Slide three, the data.
+
+nba underscore api is a Python library that downloads data from the NBA's official stats site, stats dot nba dot com.
+
+A game log has one row per team per game, with the date, the opponent, home or away, the result, the points and the shooting stats.
+
+Sixteen seasons and four hundred eighty team-seasons. From 2010-2011 to 2025-2026 there are sixteen seasons, with thirty teams each: sixteen times thirty is four hundred eighty. Each team in each season is one observation. That is small for machine learning, which is why simple models do well here, as slide seven shows.
+
+There are six features, or input variables, all computed from the first fifteen games only. We will use Philadelphia as the example.
+
+First: win percentage, wins divided by games. Philadelphia went twelve and three in its first fifteen games, which is point eight hundred.
+
+Second: point differential per game, points scored minus points allowed, divided by games. Philadelphia is at plus two point eight.
+
+Third: net rating, the point differential per hundred possessions. It adjusts for pace, because teams that play faster have more possessions and therefore bigger scores. Philadelphia is at plus two point seven.
+
+Fourth: the Pythagorean expectation, the win percentage earned by points scored and allowed. It is explained on slide five. Philadelphia is at point five eight six.
+
+Fifth: strength of schedule, the average win percentage of the opponents faced. Philadelphia is at point four six zero, meaning it faced slightly weaker than average opponents.
+
+Sixth: last season, the previous season's final win percentage. Philadelphia is at point five four nine.
+
+The target is what the model tries to predict. Here the target is the final win percentage, not the number of wins, because the 2011-2012, 2019-2020 and 2020-2021 seasons had fewer than eighty-two games. Errors are converted to wins by multiplying by eighty-two.
+
+Data leakage means accidentally using information that would not exist at prediction time. An example: computing strength of schedule with December games to predict in November. We avoid it by cutting everything at each team's fifteenth game.
+
+### 04 — Slide 4: Regression to the mean
+Slide four, regression to the mean.
+
+Regression to the mean works like this: when a measurement is noisy, extreme values tend to come back toward the average the next time. A team that starts twelve and three probably had some luck. One that starts three and twelve, some bad luck.
+
+Here is how to read the chart. Each dot is a team-season. The x axis is the win percentage after fifteen games, and the y axis is the final win percentage.
+The dashed line, where y equals x, is what would happen if the start were the truth.
+The red line is the fitted line: final win percentage equals point one eight, plus point six three times the win percentage after fifteen games.
+
+A slope of point six three means every point above five hundred early on is worth only sixty-three percent by the end. An example: a team at point eight hundred after fifteen games is thirty points above five hundred. On average, it finishes at point five hundred plus point six three times point three hundred, which is about point six nine.
+
+Why does the line cross five hundred? Because point one eight plus point six three times point five is roughly point five zero. In other words, an average team early on stays average.
+
+The standard deviation drops from point one nine zero after fifteen games to point one five one at the end of the season. Early records are more spread out because they carry more noise.
+
+What it implies: any good forecast has to shrink early records toward five hundred. That is what the models learn, and what the naive baseline does not do.
+
+### 05 — Slide 5: The models
+Slide five, the models.
+
+A baseline is a very simple reference model that serves as a yardstick. If a fancy model can't beat the baseline, it isn't worth using. We used two.
+
+The first baseline, keep win percentage, assumes each team finishes with today's win percentage. Philadelphia would end up with point eight hundred times eighty-two, about sixty-six wins.
+
+The second baseline is the Pythagorean expectation. It estimates win percentage from points: points for raised to the fourteenth power, divided by the sum of points for to the fourteenth and points against to the fourteenth. The exponent fourteen is the usual value for basketball. The idea is that the scoreboard says more about a team's strength than close wins and losses. Philadelphia's is point five eight six, well below its point eight hundred record.
+
+Linear regression, or OLS, ordinary least squares, finds the combination of the six features that minimizes the sum of squared errors. The prediction is an intercept, beta zero, plus beta one times the first feature, and so on up to beta six. The beta coefficients say how much each feature weighs.
+
+The features are standardized: each one is rescaled to mean zero and standard deviation one before training. That makes the coefficients comparable. Point differential, measured in points, and win percentage, which is a fraction, end up on the same scale.
+
+Ridge is linear regression with an L2 penalty, that is, a penalty on large coefficients. It minimizes the sum of squared errors plus alpha times the sum of squared coefficients.
+Alpha sets the strength of the penalty. With alpha equal to zero, Ridge is the same as OLS. With a large alpha, every coefficient is pushed toward zero.
+In this project, alpha equals one hundred.
+In practice: when two features say the same thing, Ridge splits the weight between them, instead of giving one a huge positive coefficient and the other a huge negative one. You will see this on slide eight.
+
+Lasso uses an L1 penalty: it penalizes the sum of the absolute values of the coefficients. Unlike Ridge, it can set coefficients to exactly zero, so it does feature selection.
+
+A random forest is the average of five hundred decision trees, each trained on a different sample of the data. It captures nonlinear relationships. A minimum leaf size of ten means each leaf of a tree must hold at least ten teams, so the trees don't memorize the data.
+
+### 06 — Slide 6: Validation
+Slide six, validation.
+
+Validation means measuring error on data the model did not see in training. Measuring on the training data is misleading, because the model may have memorized it.
+
+Leave-one-season-out, or LOSO, works like this: we hold out a whole season, train on the other fifteen and predict the one left out. We repeat this sixteen times, once per season. Why split by season and not by team? Because teams in the same season share the same conditions: the same rules, the same pace, even the 2020 bubble. Mixing teams from the same season across training and test would be a form of leakage.
+
+The temporal holdout trains on the 2010-2011 to 2022-2023 seasons and tests on 2023-2024 to 2025-2026. It answers one question: does the model still work in recent years?
+
+Nested alpha search, or nested cross-validation: Ridge's alpha is chosen with a validation run inside each training set, also split by season. That way the test season never influences the choice of alpha.
+
+The one-standard-error rule: among all alpha values whose error is within one standard error of the best, we pick the largest, which is the simplest and most stable model. The logic is: if two models are statistically tied, keep the more conservative one.
+
+Standard error is how much an average moves from sample to sample. Here, it is how much the model's error changes from one season to another.
+
+The two metrics, MAE and Spearman, are on slide seven.
+
+### 07 — Slide 7: Results
+Slide seven, the results.
+
+MAE, mean absolute error, is the average of the absolute difference between actual and predicted, converted to wins on an eighty-two game scale. It is the main metric.
+
+The keep win percentage baseline has a LOSO MAE of seven point six zero: on average, it misses by seven point six wins per team.
+Ridge has an MAE of five point six two: it misses by five point six wins per team.
+Linear regression, Lasso and random forest have five point five zero, five point six eight and five point seven two. Essentially the same as Ridge.
+And on the 2023 to 2026 temporal holdout, Ridge has an MAE of five point three five: in recent years it does slightly better.
+
+What it implies: the models take two wins off the error. And two wins often separate sixth place from seventh.
+
+Spearman, or rank correlation, measures whether the predicted order matches the actual order. It goes from minus one, reversed order, to plus one, perfect order. It is computed per conference and season, and then averaged.
+Ridge scores point seven eight, and the baseline point seven four.
+Point seven eight means the predicted standings get the order mostly right, but not perfectly: swaps between neighbors are common.
+
+The slide says the models are tied within one standard error, a quarter of a win. MAE moves by a quarter of a win from season to season just by chance. Since linear regression, Ridge, Lasso and random forest differ by less than that, you can't say one is better than another. The slide's takeaway: the gain comes from shrinking the start, not from the choice of algorithm.
+
+### 08 — Slide 8: Why Ridge
+Slide eight, why Ridge.
+
+Pearson correlation measures whether two variables move together, from minus one to plus one. Point differential per game and net rating correlate at point nine nine nine. They are practically the same information; the only difference is that net rating adjusts for pace.
+
+Multicollinearity is when features are near copies of each other. In that case OLS becomes unstable: any combination of weights that adds up to the same result fits equally well.
+
+The chart shows the standardized coefficients, for OLS and Ridge.
+Point differential per game: plus point one six one in OLS, and plus point zero two three in Ridge.
+Net rating: minus point one eight zero in OLS, and plus point zero two three in Ridge.
+Pythagorean: plus point zero seven five in OLS, and plus point zero two four in Ridge.
+Win percentage: plus point zero five three in OLS, and plus point zero three six in Ridge.
+Last season: plus point zero three two in OLS, and plus point zero two eight in Ridge.
+Strength of schedule: plus point zero zero seven in both.
+
+In OLS, net rating gets a negative weight. That would say a team with a better differential per possession is worse, which makes no sense. It is OLS offsetting one coefficient with the other.
+Ridge splits the weight evenly across the three points-based features.
+And strength of schedule barely counts, because after fifteen games the opponents' win percentage is noisy too.
+
+What it implies: Ridge has the same error as OLS, but with coefficients you can interpret and that don't change much if the data changes a little. That is why we chose Ridge.
+
+### 09 — Slide 9: Simulation
+Slide nine, the simulation.
+
+The rating is each team's strength, equal to the final win percentage Ridge predicts. Some examples, using the first fifteen games.
+San Antonio: twelve and three in its first fifteen, a point differential of plus eleven point two per game, and a rating of point seven two seven, which is about sixty wins.
+Boston: eleven and four, plus ten point five, and a rating of point six nine three, about fifty-seven wins.
+Philadelphia: twelve and three, plus two point eight, and a rating of point five nine two, about forty-nine wins.
+Philadelphia and San Antonio have the same record, but Philadelphia's point differential is much smaller. The model trusts the point differential more.
+
+Sigma, equal to point zero eight five, is the uncertainty of the rating. In each simulation, each rating gets random noise with that standard deviation. Point zero eight five times eighty-two is about seven wins: a team's true strength can typically be seven wins above or below its rating. Without this noise, the simulation would think it knows each team's strength for certain, and the intervals would be far too narrow.
+
+Logistic regression is the game model. It turns the strength difference into the probability of winning a game. The formula is: the logit of the win probability equals four point three five times the difference between the team's rating and the opponent's, plus point three two times home court.
+Logit is the scale logistic regression uses: the natural log of p divided by one minus p. To get back to a probability, you use p equals one divided by one plus e to the minus logit.
+Home court is plus one at home and minus one on the road.
+Between equal teams, the home team wins fifty-seven point nine percent of the time. That is the effect of the point three two: home court advantage.
+An example: a team with a rating point one zero higher, which is about eight wins per season, on a neutral court. Four point three five times point one zero is point four three five, which corresponds to a sixty point seven percent chance. At home, the chance rises to sixty-eight percent.
+The model's accuracy on historical games is sixty-four point three percent: it picks the winner in almost two out of three games. Basketball has a lot of game-to-game randomness, so that is a normal value.
+
+Monte Carlo: instead of computing probabilities with a formula, we draw the whole season many times. Each of the ten thousand simulations draws the nine hundred fifty-two remaining games with the game model's odds, adds them to the current wins and builds the standings. A team's top six probability is the share of the ten thousand simulations in which it finished in the top six.
+
+The two NBA Cup games: the games already scheduled add up to eighty per team. The other two depend on the NBA Cup knockout round and don't have an opponent yet. We simulate them against an average opponent, on a neutral court.
+
+The simulation has three outputs.
+Expected wins: the average wins over the ten thousand simulations.
+The eighty percent interval: from the tenth to the ninetieth percentile of simulated wins. For Philadelphia, it goes from forty-four to sixty wins. That means in eighty percent of the simulations, Philadelphia finishes in that range.
+And the probabilities of top six, play-in and out, which add up to one hundred percent for each team.
+
+### 10 — Slide 10: Backtest
+Slide ten, the backtest.
+
+A backtest means testing the method on the past, as if we were back at that moment. For each of the sixteen seasons, we go back to the day the last team completed fifteen games and simulate the rest, without using that season in training. The rating, the game model and sigma are all refit without it. Then we compare with what actually happened.
+
+Coverage of the eighty percent interval was eighty-one percent. That is, the eighty percent interval contained the actual wins in eighty-one percent of the four hundred eighty team-seasons.
+If it were sixty percent, the intervals would be too narrow, and the model overconfident.
+If it were ninety-five percent, they would be too wide, and the model underconfident.
+Eighty-one percent, close to eighty, means the uncertainty is well measured.
+
+The three-class Brier score measures the error of the probabilities. For each team, we add up, over the three classes, top six, play-in and out, the squared difference between the predicted probability and the outcome, where the outcome is one if it happened and zero if it didn't. It goes from zero, perfect, to two, the worst possible. Lower is better.
+An example: the model gave ninety percent top six, nine percent play-in and one percent out, and the team finished in the top six. The Brier is point nine zero minus one, squared, plus point zero nine squared, plus point zero one squared, which is point zero one eight. Excellent.
+The simulation's Brier score was point four two.
+The reference is point six six, the Brier score of always guessing the fixed proportions, six fifteenths, four fifteenths and five fifteenths, for every team.
+What it implies: the model's probabilities are much better than knowing nothing.
+
+Calibration, shown in a chart in the paper, means this: when the model says thirty percent, the event happens about thirty percent of the time. That is what the phrase right eighty-one percent of the time when it says eighty sums up.
+
+### 11 — Slide 11: Versions V0, V5, V10 and V15
+Slide eleven, the versions V zero, V five, V ten and V fifteen.
+
+The versions are the whole pipeline redone at four dates in the 2026-2027 season, each using only what was known that day.
+
+V zero, on October nineteenth, the day before opening night. The model uses only the previous season. Backtest Brier of point five three three, an error in final wins of seven point eight, and eighty percent interval coverage of eighty-seven percent.
+
+V five, on November second, with the first five games. Brier of point four eight eight, an error of seven point zero wins, and coverage of eighty-one percent.
+
+V ten, on November eleventh, with the first ten games. Brier of point four four four, an error of six point zero, and coverage of seventy-nine percent.
+
+V fifteen, on November twenty-second, with the first fifteen games. Brier of point four two one, an error of five point three, and coverage of eighty-one percent.
+
+The error in final wins here is the backtest MAE: the average difference between the simulation's expected wins and the actual wins. It is a bit lower than the five point six on slide seven because the simulation already includes the wins a team has on that day.
+
+What it implies.
+Each block of five games improves the forecast, and the improvement is largest early on.
+In V zero, coverage is eighty-seven percent: the intervals are a bit wide, because the model knows little.
+From V five on, the uncertainty is already well measured, with coverage close to eighty percent.
+
+Teams that changed tiers. Memphis was coming off twenty-five wins and started eleven and four, with a strong point differential. It went from thirty-three to forty-eight expected wins, and its top six chance went from fourteen to forty-eight percent. Toronto rose to forty-nine expected wins in V five and fell to thirty-eight in V fifteen: a good start that did not last. That is why you can't trust a single snapshot.
+
+### 12 — Slide 12: 2026-27 projection
+Slide twelve, the 2026-2027 projection.
+
+The heatmap works like this: each row is a team, each column a final position, from one to fifteen, and the number is the percentage of simulations in which the team finished in that position. The solid red line marks the top six cutoff; the dashed line, the play-in cutoff.
+
+Four teams stand out.
+Boston: an eleven and six record, fifty-five point eight expected wins, an interval from forty-eight to sixty-three, ninety-seven percent top six, three percent play-in and zero percent out.
+San Antonio: fourteen and three, fifty-eight point nine expected wins, an interval from fifty-one to sixty-six, ninety-five percent top six, five play-in and zero out.
+Philadelphia: fourteen and three, fifty-two point four expected wins, an interval from forty-four to sixty, ninety percent top six, nine play-in and zero out.
+Memphis: twelve and five, forty-eight point five expected wins, an interval from forty to fifty-seven, forty-eight percent top six, forty-six play-in and six out.
+
+How to read the Philadelphia case. At fourteen and three, keeping that pace would project to about sixty-seven wins. The model projects fifty-two point four because the point differential, plus two point eight per game, belongs to a good team, not a title contender. The fourteen wins already banked count; what the model shrinks is the pace from here on.
+
+And why does Boston, with a worse record than Philadelphia, have a better chance? Because of its plus ten point five point differential per game and a strong previous season, at point six eight three. The model sees Boston as stronger than its record shows.
+
+### 13 — Slide 13: Lessons
+Slide thirteen, the lessons.
+
+Validate by season, without leakage: that is why the numbers can be trusted.
+
+A simple linear model tied with the random forest. With four hundred eighty observations and an almost linear relationship, as slide four shows, a complex model has nothing more to learn.
+
+Test the simulation on the past: the backtest on slide ten is what shows that the probabilities make sense.
+
+With five games, the error already drops from thirteen point three to seven point two. This comes from the sensitivity analysis. With five games, keeping the win percentage misses by thirteen point three wins, because the start is pure noise. Ridge misses by seven point two, almost half. The model is most useful exactly when there is the least information.
+
+And what to do next time.
+Injuries, trades and rosters: the model assumes each team keeps the roster from its first games. A starter out for a month changes more than the average error.
+Versions at twenty, twenty-five and thirty games: keep following the season.
+A rating updated after every game: today, the rating uses only each team's first fifteen games.
+And official tiebreakers: today, ties in the standings are broken at random.
+
+### 14 — Slide 14: Takeaway
+Slide fourteen, the takeaway.
+
+Trust the record, but shrink it first. The record carries information, but it has to be pulled toward the mean and combined with point differential and the previous season.
+
+Live project: the data comes straight from the NBA API. Running the collection with the refresh current option and running the notebook again recomputes everything with the latest games.
+
+Use of AI: the code and texts were written with help from Claude, by Anthropic, Opus model, through Claude Code. The full statement is at the end of the paper.
+
+### 15 — Quick glossary
+To finish, a quick glossary, with each term and its value in the project.
+
+Win percentage: wins divided by games. Philadelphia, at fourteen and three, is at point eight two four.
+Alpha: the strength of the Ridge penalty. In the project, one hundred.
+Backtest: testing the method on the past, without using that year in training. Done over sixteen seasons.
+Baseline: a simple model used as a yardstick. MAE of seven point six zero.
+Brier score: the error of the probabilities, where zero is perfect and lower is better. Point four two, against a reference of point six six.
+Calibration: the model saying thirty percent and the event happening about thirty percent of the time. Coverage of eighty-one percent for an eighty percent interval.
+Coefficient: the weight of each feature in the linear model. In Ridge, about point zero two three for the points-based features.
+Coverage: the percentage of times the actual result fell inside the interval. Eighty-one percent.
+Standard error: how much an average moves by chance. A quarter of a win.
+Feature: an input variable of the model. There are six.
+Temporal holdout: training on the past and testing on recent years. MAE of five point three five.
+Eighty percent interval: the range between the tenth and ninetieth percentiles of the simulations. For Philadelphia, forty-four to sixty.
+Lasso: regression with an L1 penalty, which can set coefficients to zero. MAE of five point six eight.
+Logit: the log-odds scale of logistic regression, the log of p over one minus p. Rating difference coefficient, four point three five; home court coefficient, point three two.
+LOSO: leaving one season out at a time. Sixteen rounds.
+MAE: mean absolute error, in wins. Ridge at five point six two.
+Monte Carlo: drawing the season many times and counting the outcomes. Ten thousand simulations.
+Multicollinearity: features that are nearly identical. Point differential and net rating correlate at point nine nine nine.
+Net rating: point differential per hundred possessions. Philadelphia at plus two point seven.
+OLS: ordinary least squares linear regression. MAE of five point five zero.
+Pythagorean: the win percentage earned by points. As a baseline, MAE of six point eight three.
+Random forest: the average of many decision trees. MAE of five point seven two.
+Rating: a team's predicted strength, Ridge's final win percentage. San Antonio at point seven two seven.
+One-standard-error rule: among tied models, keep the simplest. It chose alpha equal to one hundred.
+Regression to the mean: extreme starts come back toward the average. Slope of point six three.
+Logistic regression: turns a strength difference into a probability. The home team wins fifty-seven point nine percent between equal teams.
+Ridge: linear regression with an L2 penalty. The chosen model.
+Sigma: the uncertainty of the rating. Point zero eight five, about seven wins.
+Spearman: whether the predicted order matches the actual one, from minus one to one. Point seven eight.
+Leakage: accidentally using information from the future. Avoided by cutting at the fifteenth game.
+
+End of the study guide. Good luck with your studies and your presentation!
