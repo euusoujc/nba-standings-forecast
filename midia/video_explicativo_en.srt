@@ -1,0 +1,687 @@
+1
+00:00:00,550 --> 00:00:01,300
+Hi!
+
+2
+00:00:01,250 --> 00:00:07,812
+In this video we will walk you through our final Machine Learning project at UFABC: fifteen games are not a season.
+
+3
+00:00:07,812 --> 00:00:12,775
+The idea is to predict how the NBA regular season will end when it has barely started.
+
+4
+00:00:12,775 --> 00:00:23,212
+We will go through four parts: the topic, the data and its sources, the methodology and, finally, the results and the analysis, showing what we built at each step.
+
+5
+00:00:24,530 --> 00:00:26,317
+Part one: the topic.
+
+6
+00:00:27,600 --> 00:00:29,762
+It all starts with a simple question.
+
+7
+00:00:29,712 --> 00:00:32,175
+Philadelphia is fourteen and three.
+
+8
+00:00:32,175 --> 00:00:34,437
+Is that a good team, or just luck?
+
+9
+00:00:34,437 --> 00:00:37,850
+The NBA regular season has eighty-two games per team.
+
+10
+00:00:37,850 --> 00:00:45,687
+After about fifteen games, each team has played less than twenty percent of the season, and the November standings are still very misleading.
+
+11
+00:00:45,687 --> 00:00:59,275
+For each team, the project answers how many wins it should end up with, and how likely it is to finish in its conference's top six, which means a direct playoff spot, in the play-in, seventh to tenth place, or out, eleventh to fifteenth.
+
+12
+00:01:00,580 --> 00:01:03,505
+In the end, the project delivers four things.
+
+13
+00:01:03,455 --> 00:01:06,667
+Each team's expected wins, with an eighty percent interval.
+
+14
+00:01:06,667 --> 00:01:10,930
+The probabilities of top six, play-in and out, for all thirty teams.
+
+15
+00:01:10,930 --> 00:01:19,305
+Four versions of the forecast, made before opening night and after five, ten and fifteen games, to show how much each block of games adds.
+
+16
+00:01:19,305 --> 00:01:28,392
+And it is a live project: since the data comes straight from the NBA API, you just rerun the pipeline to update the forecast at any point in the season.
+
+17
+00:01:28,392 --> 00:01:33,555
+The numbers in this video are a snapshot from November twenty-second, 2026.
+
+18
+00:01:34,880 --> 00:01:37,742
+Part two: the data and its sources.
+
+19
+00:01:39,010 --> 00:01:48,597
+All the data comes from the NBA's public stats API, the stats dot nba dot com site, accessed with the nba underscore api Python library.
+
+20
+00:01:48,547 --> 00:01:50,147
+We use two endpoints.
+
+21
+00:01:50,147 --> 00:02:00,860
+League Game Log gives the log of every regular season game, one row per team per game, with the date, opponent, home or away, result, points and shooting stats.
+
+22
+00:02:00,860 --> 00:02:05,522
+We downloaded seventeen seasons, from 2009 to 2027.
+
+23
+00:02:05,522 --> 00:02:12,122
+And Schedule League V2 gives the current season's schedule, which is where the nine hundred fifty-two remaining games come from.
+
+24
+00:02:12,122 --> 00:02:15,285
+Every file is cached in the data slash raw folder.
+
+25
+00:02:15,285 --> 00:02:21,610
+The first download takes about ten minutes, at one request per second; after that, everything is local.
+
+26
+00:02:22,940 --> 00:02:26,340
+This is the core of the collection, in coleta dot py.
+
+27
+00:02:26,290 --> 00:02:29,965
+If the season file already exists, it is read from the cache.
+
+28
+00:02:29,965 --> 00:02:36,040
+If not, the function calls the NBA endpoint, filtering the regular season and team-level data.
+
+29
+00:02:36,040 --> 00:02:45,077
+Since the API sometimes refuses connections or times out, every call goes through a retry function that tries again with a wait that doubles after each failure.
+
+30
+00:02:45,077 --> 00:02:49,690
+To update the current season, you just run the collection with the refresh current option.
+
+31
+00:02:51,010 --> 00:02:58,835
+After collection, the game logs become a single table, games dot csv, with thirty-eight thousand seven hundred thirty-four rows.
+
+32
+00:02:58,785 --> 00:03:06,622
+Each game appears twice, once for each team, and on the same row we join the opponent's stats, because they are needed to estimate possessions.
+
+33
+00:03:06,622 --> 00:03:12,622
+The historical data has sixteen complete seasons, from 2010 to 2026.
+
+34
+00:03:12,622 --> 00:03:16,147
+With thirty teams, that makes four hundred eighty team-seasons.
+
+35
+00:03:16,147 --> 00:03:18,785
+Each team in each season is one observation.
+
+36
+00:03:18,785 --> 00:03:23,472
+That is small for machine learning, and this limitation will shape the choice of models.
+
+37
+00:03:24,780 --> 00:03:29,205
+In phase two, features dot py turns the games into input variables.
+
+38
+00:03:29,155 --> 00:03:38,555
+The key point is on the third line: we number each team's games and keep only the first N. N is the fewest games any team has played today, which is fifteen.
+
+39
+00:03:38,555 --> 00:03:44,955
+This prevents data leakage, that is, accidentally using information that would not exist on the day of the forecast.
+
+40
+00:03:44,955 --> 00:03:49,630
+Even strength of schedule is computed only with games up to each team's cutoff date.
+
+41
+00:03:49,630 --> 00:03:59,930
+Possessions are estimated with the classic formula: field goal attempts, plus zero point four four times free throw attempts, minus offensive rebounds, plus turnovers.
+
+42
+00:04:01,250 --> 00:04:02,862
+There are six features.
+
+43
+00:04:02,812 --> 00:04:05,450
+Win percentage, wins divided by games.
+
+44
+00:04:05,450 --> 00:04:07,087
+Point differential per game.
+
+45
+00:04:07,087 --> 00:04:11,750
+Net rating, the point differential per hundred possessions, which corrects for pace.
+
+46
+00:04:11,750 --> 00:04:17,437
+The Pythagorean expectation, which estimates the wins a team deserves from points scored and allowed.
+
+47
+00:04:17,437 --> 00:04:20,787
+Strength of schedule, the opponents' average win percentage.
+
+48
+00:04:20,787 --> 00:04:23,050
+And the previous season's win percentage.
+
+49
+00:04:23,050 --> 00:04:31,487
+Look at Philadelphia: a point eight hundred win percentage in its first fifteen games, but only point five eight six by the Pythagorean formula.
+
+50
+00:04:31,487 --> 00:04:37,925
+The target is the final win percentage, not the number of wins, because three seasons had fewer than eighty-two games.
+
+51
+00:04:37,925 --> 00:04:43,100
+To make it easier to read, errors are converted to wins by multiplying by eighty-two.
+
+52
+00:04:44,420 --> 00:04:48,032
+Before modeling, we looked at the correlation between features.
+
+53
+00:04:47,982 --> 00:04:55,220
+The three points-based ones, point differential, net rating and Pythagorean, correlate above point nine nine with each other.
+
+54
+00:04:55,220 --> 00:05:00,757
+Point differential and net rating reach point nine nine nine: they are practically the same information.
+
+55
+00:05:00,757 --> 00:05:05,232
+This is called multicollinearity, and it will be decisive when choosing the model.
+
+56
+00:05:06,550 --> 00:05:08,875
+Part three: the methodology.
+
+57
+00:05:10,130 --> 00:05:21,280
+The work is organized as a pipeline of seven Python scripts, one per phase: collection, features, models, simulation, versions, sensitivity and summary.
+
+58
+00:05:21,230 --> 00:05:28,380
+The projeto dot ipynb notebook calls these scripts in order and runs the whole pipeline, with explanations between steps.
+
+59
+00:05:28,380 --> 00:05:35,742
+The random seed is fixed at forty-two so everything is reproducible, and every figure is generated in Portuguese and in English.
+
+60
+00:05:35,742 --> 00:05:40,280
+At the end, one script builds the paper's tables and another builds the slides.
+
+61
+00:05:41,600 --> 00:05:43,862
+This chart is the heart of the project.
+
+62
+00:05:43,812 --> 00:05:45,650
+Each dot is a team-season.
+
+63
+00:05:45,650 --> 00:05:52,875
+On the horizontal axis, the win percentage after fifteen games; on the vertical axis, the final win percentage.
+
+64
+00:05:52,875 --> 00:05:57,125
+If the start told the whole story, the dots would sit on the dashed diagonal.
+
+65
+00:05:57,125 --> 00:05:58,000
+They don't.
+
+66
+00:05:58,000 --> 00:06:06,187
+The fitted line has a slope of point six three: every point above five hundred at the start is worth only sixty-three percent by the end.
+
+67
+00:06:06,187 --> 00:06:11,512
+This is regression to the mean: a team that starts twelve and three probably got a bit lucky.
+
+68
+00:06:11,512 --> 00:06:17,950
+The standard deviation also shrinks, from point one nine after fifteen games to point one five at the end.
+
+69
+00:06:17,950 --> 00:06:21,975
+Conclusion: any good forecast has to shrink the start toward the mean.
+
+70
+00:06:23,300 --> 00:06:27,750
+We compared two baselines, which act as a yardstick, with four models.
+
+71
+00:06:27,700 --> 00:06:32,150
+The first baseline assumes the team keeps its current win percentage until the end.
+
+72
+00:06:32,150 --> 00:06:36,450
+The second uses the Pythagorean formula, with an exponent of fourteen.
+
+73
+00:06:36,450 --> 00:06:57,512
+The models are ordinary least squares linear regression; Ridge, which is linear regression with an L2 penalty on the size of the coefficients, controlled by the alpha parameter; Lasso, with an L1 penalty, which can set coefficients to zero; and a Random Forest with five hundred trees and at least ten teams per leaf, so it does not memorize the data.
+
+74
+00:06:57,512 --> 00:06:59,987
+Features are standardized before training.
+
+75
+00:07:01,300 --> 00:07:06,287
+To avoid fooling ourselves, every metric is measured on data the model has not seen.
+
+76
+00:07:06,237 --> 00:07:14,025
+We used leave-one-season-out: we remove a whole season, train on the other fifteen and predict the one left out, sixteen times.
+
+77
+00:07:14,025 --> 00:07:19,987
+Splitting by season rather than by team matters, because teams in the same season share the same conditions.
+
+78
+00:07:19,987 --> 00:07:26,512
+We also ran a temporal holdout: training up to 2023 and testing on the three most recent seasons.
+
+79
+00:07:26,512 --> 00:07:33,812
+And Ridge's alpha is chosen in an inner validation, also split by season, so the test set never influences the choice.
+
+80
+00:07:35,130 --> 00:07:38,267
+In the code, this lives in modelos dot py.
+
+81
+00:07:38,217 --> 00:07:44,905
+The Tuned class runs a grid search with GroupKFold, where the groups are seasons, and measures mean absolute error.
+
+82
+00:07:44,905 --> 00:07:57,205
+Instead of taking the alpha with the lowest error, we use the one-standard-error rule: among all alphas whose error is within one standard error of the best, we pick the largest, which is the simplest and most stable model.
+
+83
+00:07:57,205 --> 00:08:01,305
+If two models are statistically tied, we keep the more conservative one.
+
+84
+00:08:01,305 --> 00:08:03,367
+The chosen alpha was one hundred.
+
+85
+00:08:04,670 --> 00:08:10,170
+The regression predicts the final win percentage, but the goal is the odds of making the top six.
+
+86
+00:08:10,120 --> 00:08:14,432
+For that, the Ridge forecast becomes the rating, each team's strength.
+
+87
+00:08:14,432 --> 00:08:24,970
+San Antonio has a rating of point seven two seven, and Philadelphia, with the same record, only point five nine two, because its point differential is much smaller.
+
+88
+00:08:24,970 --> 00:08:32,432
+A logistic regression, trained on historical games, turns the rating difference and home court into a win probability for each game.
+
+89
+00:08:32,432 --> 00:08:36,395
+Between equal teams, the home team wins fifty-eight percent of the time.
+
+90
+00:08:36,395 --> 00:08:46,782
+Each rating also gets random noise with a standard deviation, sigma, of point zero eight five, about seven wins, because we never know any team's true strength for sure.
+
+91
+00:08:48,100 --> 00:08:52,187
+This is the Monte Carlo simulation, in simulacao dot py.
+
+92
+00:08:52,137 --> 00:08:57,912
+Instead of computing the probabilities with a formula, we draw the rest of the season ten thousand times.
+
+93
+00:08:57,912 --> 00:09:00,625
+First, each team gets noise on its rating.
+
+94
+00:09:00,625 --> 00:09:09,225
+Then, for each of the nine hundred fifty-two remaining games, the logistic model gives the home team's chance of winning, and a random number decides the game.
+
+95
+00:09:09,225 --> 00:09:14,250
+Everything is vectorized in NumPy, so ten thousand seasons run in seconds.
+
+96
+00:09:14,250 --> 00:09:23,187
+We add the current wins, build each conference's standings and count: a team's top six probability is the share of simulations in which it finished in the top six.
+
+97
+00:09:23,187 --> 00:09:29,437
+The two NBA Cup games that do not have an opponent yet are simulated against an average team, on a neutral court.
+
+98
+00:09:30,770 --> 00:09:32,470
+But can we trust these odds?
+
+99
+00:09:32,420 --> 00:09:34,782
+To answer that, we ran a backtest.
+
+100
+00:09:34,782 --> 00:09:43,945
+For each of the sixteen past seasons, we went back to the day the last team completed fifteen games and simulated the rest, without using that season in training.
+
+101
+00:09:43,945 --> 00:09:46,332
+Then we compared it with what actually happened.
+
+102
+00:09:46,332 --> 00:09:52,795
+The eighty percent interval contained the actual wins in eighty-one percent of cases: the uncertainty is well measured.
+
+103
+00:09:52,795 --> 00:10:01,320
+And the Brier score, which measures the error of the probabilities, was point four two, against point six six for always guessing the fixed proportions.
+
+104
+00:10:01,320 --> 00:10:02,595
+Lower is better.
+
+105
+00:10:03,910 --> 00:10:06,997
+The calibration curve shows the same thing another way.
+
+106
+00:10:06,947 --> 00:10:12,272
+We grouped the backtest forecasts by probability bin and compared them with the actual frequency.
+
+107
+00:10:12,272 --> 00:10:19,172
+The points sit close to the diagonal: when the simulation says thirty percent, the event happens about thirty percent of the time.
+
+108
+00:10:20,490 --> 00:10:23,027
+Two analyses complete the methodology.
+
+109
+00:10:22,977 --> 00:10:39,240
+In the versions, the whole pipeline, with features, Ridge, game model, sigma, backtest and simulation, is redone at four dates in the season, each using only what was known that day: before opening night, and after five, ten and fifteen games.
+
+110
+00:10:39,240 --> 00:10:47,027
+And in the sensitivity analysis we repeat the validation with N from five to forty-one games, to see how the error drops with more information.
+
+111
+00:10:48,330 --> 00:10:51,342
+Part four: the results and the analysis.
+
+112
+00:10:52,600 --> 00:10:53,837
+The main result.
+
+113
+00:10:53,787 --> 00:10:58,937
+Keeping the current win percentage misses by seven point six wins per team, on average.
+
+114
+00:10:58,937 --> 00:11:01,437
+Ridge misses by five point six.
+
+115
+00:11:01,437 --> 00:11:05,987
+That is two wins fewer, and two wins often separate sixth place from seventh.
+
+116
+00:11:05,987 --> 00:11:11,187
+On the holdout of recent seasons, Ridge does even better: five point three five.
+
+117
+00:11:11,187 --> 00:11:18,975
+Spearman correlation, which measures whether the predicted order matches the real one, rises from point seven four to point seven eight.
+
+118
+00:11:18,975 --> 00:11:27,275
+And an important detail: linear regression, Ridge, Lasso and Random Forest are tied within one standard error, a quarter of a win.
+
+119
+00:11:27,275 --> 00:11:31,987
+In other words, the gain comes from shrinking the start, not from picking the algorithm.
+
+120
+00:11:33,300 --> 00:11:38,825
+Here is the visual comparison between the baseline and the model, on out-of-sample predictions.
+
+121
+00:11:38,775 --> 00:11:45,925
+On the left, keeping the win percentage produces predictions that are far too spread out, taking extreme starts at face value.
+
+122
+00:11:45,925 --> 00:11:51,900
+On the right, Ridge compresses the predictions toward the mean, and the points sit closer to the diagonal.
+
+123
+00:11:53,230 --> 00:11:56,942
+Why choose Ridge if linear regression had a slightly lower error?
+
+124
+00:11:56,892 --> 00:11:58,580
+Because of the coefficients.
+
+125
+00:11:58,580 --> 00:12:07,092
+With point differential and net rating almost identical, linear regression gives plus point one six to one and minus point one eight to the other.
+
+126
+00:12:07,092 --> 00:12:15,092
+That would say a team with a better differential per possession is worse, which makes no sense: it is the model offsetting one coefficient with the other.
+
+127
+00:12:15,092 --> 00:12:21,017
+Ridge splits the weight evenly across the three points-based features, about point zero two three each.
+
+128
+00:12:21,017 --> 00:12:23,230
+Strength of schedule barely counts.
+
+129
+00:12:23,230 --> 00:12:26,942
+Same error, but interpretable, stable coefficients.
+
+130
+00:12:28,260 --> 00:12:31,885
+The sensitivity analysis shows when the model helps most.
+
+131
+00:12:31,835 --> 00:12:39,235
+With only five games, keeping the win percentage misses by thirteen point three wins, because the start is almost pure noise.
+
+132
+00:12:39,235 --> 00:12:42,210
+Ridge misses by seven point two, almost half.
+
+133
+00:12:42,210 --> 00:12:47,985
+As the season goes on, the two curves get closer: at forty-one games, the gap is small.
+
+134
+00:12:47,985 --> 00:12:51,660
+The model is worth the most exactly when there is the least information.
+
+135
+00:12:52,990 --> 00:12:56,327
+In the versions, each date's backtest shows the improvement.
+
+136
+00:12:56,277 --> 00:13:05,427
+The Brier score drops from point five three in the preseason to point four nine with five games, point four four with ten and point four two with fifteen.
+
+137
+00:13:05,427 --> 00:13:09,790
+The error in final wins drops from seven point eight to five point three.
+
+138
+00:13:09,790 --> 00:13:12,452
+The dashed line is the reference of knowing nothing.
+
+139
+00:13:12,452 --> 00:13:21,952
+Coverage of the eighty percent interval stays near eighty from the five-game version on; in the preseason it is eighty-seven, because the model knows little and the intervals are wide.
+
+140
+00:13:23,260 --> 00:13:26,310
+And you can see teams changing tiers across the versions.
+
+141
+00:13:26,260 --> 00:13:38,285
+Memphis, coming off twenty-five wins, started eleven and four with a strong point differential: it went from thirty-three to forty-eight expected wins, and its top six chance went from fourteen to forty-eight percent.
+
+142
+00:13:38,285 --> 00:13:47,222
+Toronto, on the other hand, rose to forty-nine in the five-game version and fell to thirty-eight in the fifteen-game one: a good start that did not last.
+
+143
+00:13:47,222 --> 00:13:50,072
+That is why you cannot trust a single snapshot.
+
+144
+00:13:51,390 --> 00:13:53,265
+This is the current projection.
+
+145
+00:13:53,215 --> 00:13:58,515
+In the heatmap, each row is a team and each column a final position, from one to fifteen.
+
+146
+00:13:58,515 --> 00:14:02,490
+The number is the share of simulations in which the team finished in that position.
+
+147
+00:14:02,490 --> 00:14:07,190
+The solid line marks the top six cutoff, and the dashed line the play-in cutoff.
+
+148
+00:14:07,190 --> 00:14:15,415
+At the top, the distributions are concentrated; in the middle of the table they spread over several positions, which is where the real uncertainty is.
+
+149
+00:14:16,730 --> 00:14:17,992
+Some highlights.
+
+150
+00:14:17,942 --> 00:14:25,505
+Boston has a ninety-seven percent chance of a top six finish, and San Antonio ninety-five, with fifty-nine expected wins.
+
+151
+00:14:25,505 --> 00:14:28,380
+And Philadelphia, at fourteen and three?
+
+152
+00:14:28,380 --> 00:14:31,130
+At that pace it would win about sixty-seven games.
+
+153
+00:14:31,130 --> 00:14:41,355
+The model projects fifty-two point four, with an interval from forty-four to sixty, because a plus two point eight per game differential belongs to a good team, not a title contender.
+
+154
+00:14:41,355 --> 00:14:45,580
+The wins already banked count; what the model shrinks is the pace from here on.
+
+155
+00:14:45,580 --> 00:14:52,955
+Boston, with a worse record, has a better chance: a plus ten point five per game differential and a strong previous season.
+
+156
+00:14:52,955 --> 00:14:57,967
+Memphis is on the edge, with forty-eight percent top six and forty-six percent play-in.
+
+157
+00:14:59,300 --> 00:15:00,437
+What we learned.
+
+158
+00:15:00,387 --> 00:15:05,000
+Validating by season, without leakage, is what makes the numbers trustworthy.
+
+159
+00:15:05,000 --> 00:15:14,162
+A simple linear model tied with the random forest: with four hundred eighty observations and an almost linear relationship, a complex model has nothing more to learn.
+
+160
+00:15:14,162 --> 00:15:18,637
+And testing the simulation on the past is what shows the probabilities make sense.
+
+161
+00:15:18,637 --> 00:15:29,887
+The limitations: injuries, trades and roster changes are not modeled, the rating uses only each team's first fifteen games, and ties are broken at random rather than by the official rules.
+
+162
+00:15:29,887 --> 00:15:35,125
+These are the next steps, along with new versions at twenty, twenty-five and thirty games.
+
+163
+00:15:36,430 --> 00:15:38,667
+To wrap up, here is what we built.
+
+164
+00:15:38,617 --> 00:15:43,080
+The code, with the notebook that runs the whole pipeline and the seven scripts.
+
+165
+00:15:43,080 --> 00:15:51,042
+An IEEE-format paper, in Portuguese and English, written in LaTeX, with tables and figures generated straight from the results.
+
+166
+00:15:51,042 --> 00:15:57,505
+The fourteen-slide presentation, in both languages, with the talk script and a guide that explains every term.
+
+167
+00:15:57,505 --> 00:16:01,605
+And the results folder, with the tables, the figures and a summary.
+
+168
+00:16:01,605 --> 00:16:11,455
+The code and texts were written with help from Claude, by Anthropic; the authors defined the question, the data, the models and the validation, and checked the results.
+
+169
+00:16:12,770 --> 00:16:16,782
+The takeaway is this: trust the record, but shrink it first.
+
+170
+00:16:16,732 --> 00:16:24,257
+The start of the season carries information, but it has to be pulled toward the mean and combined with point differential and the previous season.
+
+171
+00:16:24,257 --> 00:16:27,820
+And since the project is live, you just rerun it to update.
+
+172
+00:16:27,820 --> 00:16:29,045
+Thanks for watching!

@@ -1,0 +1,291 @@
+### 00 — Introdução
+Guia de estudo em áudio da apresentação: quinze jogos não são uma temporada.
+
+Este áudio acompanha os catorze slides da apresentação, na mesma ordem, e explica o que cada termo e cada métrica quer dizer. O roteiro de fala diz o que falar em cinco minutos. Este guia vai além: explica o significado de cada coisa, para que vocês dominem o assunto e consigam responder perguntas. Todos os números são da foto de vinte e dois de novembro de 2026, com N igual a quinze jogos.
+
+Para cada termo, a explicação segue a mesma lógica: o que é, qual o valor no projeto, e o que isso implica.
+
+### 01 — Slide 1: Título
+Slide um, o título.
+
+Quinze jogos não são uma temporada. A temporada regular da NBA tem oitenta e dois jogos por time. Com quinze, cada time jogou menos de vinte por cento da temporada. O título resume a tese do trabalho: dá para prever bastante com quinze jogos, mas não dá para levar a classificação de novembro ao pé da letra.
+
+O subtítulo cita o Ridge e o Monte Carlo, que são as duas peças do método. O Ridge estima a força de cada time. O Monte Carlo transforma essa força em chances de classificação. Os dois são explicados nos slides cinco, oito e nove.
+
+### 02 — Slide 2: A pergunta
+Slide dois, a pergunta.
+
+Aproveitamento, ou win percentage, é o número de vitórias dividido pelo número de jogos. O Philadelphia, com catorze vitórias e três derrotas, tem catorze dividido por dezessete, que dá zero vírgula oitocentos e vinte e quatro.
+
+Top seis, play-in ou fora. Cada conferência, a Leste e a Oeste, tem quinze times.
+Quem termina do primeiro ao sexto lugar, o top seis, tem vaga direta nos playoffs.
+Quem termina do sétimo ao décimo vai para o play-in, um mini torneio que decide as duas últimas vagas.
+E quem termina do décimo primeiro ao décimo quinto está fora, eliminado.
+
+P de top seis é a probabilidade de o time terminar entre os seis primeiros. É o que o projeto entrega no fim, junto com as vitórias esperadas.
+
+### 03 — Slide 3: Dados
+Slide três, os dados.
+
+O nba underline api é uma biblioteca Python que baixa dados do site oficial de estatísticas da NBA, o stats ponto nba ponto com.
+
+O game log tem uma linha por time por jogo, com a data, o adversário, o mando de quadra, o resultado, os pontos e as estatísticas de arremesso.
+
+Dezesseis temporadas e quatrocentos e oitenta times-temporada. De 2010-2011 a 2025-2026 são dezesseis temporadas, com trinta times cada: dezesseis vezes trinta dá quatrocentos e oitenta. Cada time em cada temporada é uma observação. Isso é pouco para aprendizado de máquina, e é por isso que modelos simples funcionam bem aqui, como mostra o slide sete.
+
+As features, ou variáveis de entrada, são seis, todas calculadas só com os quinze primeiros jogos. Vamos usar o Philadelphia como exemplo.
+
+Primeira: o aproveitamento, vitórias divididas por jogos. O Philadelphia fez doze a três nos quinze primeiros jogos, o que dá zero vírgula oitocentos.
+
+Segunda: o saldo por jogo, que são os pontos feitos menos os pontos sofridos, divididos pelo número de jogos. O Philadelphia tem mais dois vírgula oito.
+
+Terceira: o net rating, o saldo de pontos a cada cem posses de bola. Ele corrige o ritmo de jogo, porque times que jogam mais rápido têm mais posses e, por isso, placares maiores. O Philadelphia tem mais dois vírgula sete.
+
+Quarta: a expectativa pitagórica, que dá as vitórias merecidas pelos pontos. Ela é explicada no slide cinco. O Philadelphia tem zero vírgula quinhentos e oitenta e seis.
+
+Quinta: a força de tabela, que é o aproveitamento médio dos adversários enfrentados. O Philadelphia tem zero vírgula quatrocentos e sessenta, ou seja, enfrentou adversários um pouco mais fracos que a média.
+
+Sexta: a temporada anterior, o aproveitamento final do ano passado. O Philadelphia tem zero vírgula quinhentos e quarenta e nove.
+
+O alvo, ou target, é o que o modelo tenta prever. Aqui, o alvo é o aproveitamento final, e não o número de vitórias, porque as temporadas 2011-2012, 2019-2020 e 2020-2021 tiveram menos de oitenta e dois jogos. Os erros são convertidos para vitórias multiplicando por oitenta e dois.
+
+Vazamento de dados, ou data leakage, é usar, sem querer, uma informação que não existiria na hora da previsão. Um exemplo: calcular a força de tabela com jogos de dezembro para prever em novembro. Nós evitamos isso cortando tudo no décimo quinto jogo de cada time.
+
+### 04 — Slide 4: Regressão à média
+Slide quatro, a regressão à média.
+
+Regressão à média é o seguinte: quando uma medida tem muito ruído, os valores extremos tendem a voltar para perto da média na medição seguinte. Um time que começa doze a três provavelmente teve um pouco de sorte. Um que começa três a doze, um pouco de azar.
+
+O gráfico funciona assim. Cada ponto é um time-temporada. O eixo x é o aproveitamento depois de quinze jogos, e o eixo y é o aproveitamento final.
+A linha tracejada, em que y é igual a x, é o que aconteceria se o começo fosse a verdade.
+A linha vermelha é a reta ajustada: aproveitamento final igual a zero vírgula dezoito, mais zero vírgula sessenta e três vezes o aproveitamento após quinze jogos.
+
+A inclinação de zero vírgula sessenta e três quer dizer que cada ponto acima de zero vírgula quinhentos no começo vale só sessenta e três por cento no fim. Um exemplo: um time com zero vírgula oitocentos depois de quinze jogos está trinta pontos acima de zero vírgula quinhentos. Ele termina, em média, com zero vírgula quinhentos mais zero vírgula sessenta e três vezes zero vírgula trezentos, o que dá mais ou menos zero vírgula sessenta e nove.
+
+Por que a reta cruza o ponto zero vírgula quinhentos? Porque zero vírgula dezoito mais zero vírgula sessenta e três vezes zero vírgula cinco dá aproximadamente zero vírgula cinquenta. Ou seja, um time mediano no começo continua mediano.
+
+O desvio-padrão cai de zero vírgula cento e noventa, depois de quinze jogos, para zero vírgula cento e cinquenta e um, no fim da temporada. Os aproveitamentos do começo são mais espalhados porque têm mais ruído.
+
+O que isso implica: qualquer previsão boa precisa encolher o começo em direção a zero vírgula quinhentos. É isso que os modelos aprendem, e é o que o baseline ingênuo não faz.
+
+### 05 — Slide 5: Os modelos
+Slide cinco, os modelos.
+
+Baseline é um modelo de referência, bem simples, que serve de régua. Se um modelo sofisticado não ganha do baseline, ele não serve. Usamos dois.
+
+O primeiro baseline, mantém aproveitamento, supõe que o time vai terminar com o mesmo aproveitamento de hoje. O Philadelphia terminaria com zero vírgula oitocentos vezes oitenta e dois, cerca de sessenta e seis vitórias.
+
+O segundo baseline é a expectativa pitagórica. Ela estima o aproveitamento pelos pontos: pontos feitos elevados a catorze, divididos pela soma de pontos feitos elevados a catorze com pontos sofridos elevados a catorze. O expoente catorze é o valor usado no basquete. A ideia é que o placar diz mais sobre a força de um time do que vitórias apertadas. O Philadelphia tem zero vírgula quinhentos e oitenta e seis, bem abaixo dos zero vírgula oitocentos da campanha.
+
+A regressão linear, ou OLS, de mínimos quadrados ordinários, acha a combinação das seis features que minimiza a soma dos erros ao quadrado. A previsão é um intercepto, beta zero, mais beta um vezes a primeira feature, e assim por diante até beta seis. Os coeficientes beta dizem quanto cada feature pesa.
+
+As features são padronizadas: cada uma é transformada para ter média zero e desvio-padrão um antes do treino. Assim, os coeficientes ficam comparáveis entre si. O saldo, que é medido em pontos, e o aproveitamento, que é uma fração, passam a ter a mesma escala.
+
+O Ridge é a regressão linear com penalidade L2, ou seja, com uma multa para coeficientes grandes. Ele minimiza a soma dos erros ao quadrado, mais alfa vezes a soma dos coeficientes ao quadrado.
+O alfa controla a força da multa. Com alfa igual a zero, o Ridge é igual ao OLS. Com alfa grande, todos os coeficientes são empurrados para zero.
+No projeto, alfa é igual a cem.
+O efeito prático é este: quando duas features dizem a mesma coisa, o Ridge divide o peso entre elas, em vez de dar um coeficiente enorme e positivo a uma e enorme e negativo à outra. Isso aparece no slide oito.
+
+O Lasso usa a penalidade L1: multa a soma dos valores absolutos dos coeficientes. Diferente do Ridge, ele pode zerar coeficientes, ou seja, faz seleção de features.
+
+A Random Forest é a média de quinhentas árvores de decisão, cada uma treinada numa amostra diferente dos dados. Ela capta relações não lineares. A folha mínima de dez quer dizer que cada folha da árvore precisa ter pelo menos dez times, para que o modelo não decore os dados.
+
+### 06 — Slide 6: Validação
+Slide seis, a validação.
+
+Validação é medir o erro em dados que o modelo não viu no treino. Medir no próprio treino engana, porque o modelo pode ter decorado os dados.
+
+O leave-one-season-out, ou LOSO, funciona assim: tiramos uma temporada inteira, treinamos com as outras quinze e prevemos a que ficou de fora. Repetimos dezesseis vezes, uma para cada temporada. Por que separar por temporada e não por time? Porque times da mesma temporada dividem as mesmas condições: as mesmas regras, o mesmo ritmo de jogo, e até a bolha de 2020. Misturar times da mesma temporada no treino e no teste seria uma forma de vazamento.
+
+O holdout temporal treina com as temporadas de 2010-2011 a 2022-2023 e testa de 2023-2024 a 2025-2026. Ele responde a uma pergunta: o modelo continua bom nos anos mais recentes?
+
+A busca aninhada do alfa, ou nested cross-validation: o alfa do Ridge é escolhido com uma validação dentro de cada treino, também separando por temporada. Assim, a temporada de teste nunca influencia a escolha do alfa.
+
+A regra de um erro-padrão: entre todos os alfas cujo erro fica a até um erro-padrão do melhor, escolhemos o maior, que é o modelo mais simples e estável. A lógica é: se dois modelos estão estatisticamente empatados, fique com o mais conservador.
+
+Erro-padrão é quanto uma média varia de amostra para amostra. Aqui, é quanto o erro do modelo muda de uma temporada para outra.
+
+As duas métricas, o MAE e o Spearman, estão no slide sete.
+
+### 07 — Slide 7: Resultados
+Slide sete, os resultados.
+
+O MAE, mean absolute error, ou erro absoluto médio, é a média do valor absoluto da diferença entre o real e o previsto, convertida para vitórias numa temporada de oitenta e dois jogos. É a métrica principal.
+
+O baseline que mantém o aproveitamento tem MAE de sete vírgula sessenta no LOSO: erra, em média, sete vírgula seis vitórias por time.
+O Ridge tem MAE de cinco vírgula sessenta e dois: erra cinco vírgula seis vitórias por time.
+A regressão linear, o Lasso e a Random Forest têm cinco vírgula cinquenta, cinco vírgula sessenta e oito e cinco vírgula setenta e dois. São praticamente iguais ao Ridge.
+E no holdout de 2023 a 2026, o Ridge tem MAE de cinco vírgula trinta e cinco: nos anos recentes, funciona até um pouco melhor.
+
+O que isso implica: os modelos tiram duas vitórias do erro. E duas vitórias muitas vezes separam o sexto do sétimo lugar.
+
+O Spearman, ou correlação de postos, mede se a ordem prevista bate com a ordem real. Vai de menos um, ordem invertida, a mais um, ordem perfeita. Ele é calculado por conferência e por temporada, e depois tiramos a média.
+O Ridge tem zero vírgula setenta e oito, e o baseline, zero vírgula setenta e quatro.
+Zero vírgula setenta e oito quer dizer que a classificação prevista acerta bem a ordem, mas não perfeitamente: trocas entre vizinhos são comuns.
+
+O slide diz que os modelos estão empatados dentro de um erro-padrão, de zero vírgula vinte e cinco vitória. O MAE varia zero vírgula vinte e cinco vitória de temporada para temporada só por acaso. Como a regressão linear, o Ridge, o Lasso e a Random Forest diferem menos do que isso, não dá para dizer que um é melhor que o outro. A conclusão do slide: o ganho vem de encolher o começo, e não de escolher o algoritmo.
+
+### 08 — Slide 8: Por que Ridge
+Slide oito, por que o Ridge.
+
+A correlação de Pearson mede se duas variáveis andam juntas, de menos um a mais um. O saldo por jogo e o net rating têm correlação de zero vírgula novecentos e noventa e nove. São praticamente a mesma informação; a única diferença é que o net rating desconta o ritmo de jogo.
+
+Multicolinearidade é quando as features são quase cópias umas das outras. Nesse caso, o OLS fica instável: ele pode dar qualquer combinação de pesos que some o mesmo resultado.
+
+O gráfico mostra os coeficientes padronizados, no OLS e no Ridge.
+Saldo por jogo: mais zero vírgula cento e sessenta e um no OLS, e mais zero vírgula zero vinte e três no Ridge.
+Net rating: menos zero vírgula cento e oitenta no OLS, e mais zero vírgula zero vinte e três no Ridge.
+Pitagórica: mais zero vírgula zero setenta e cinco no OLS, e mais zero vírgula zero vinte e quatro no Ridge.
+Aproveitamento: mais zero vírgula zero cinquenta e três no OLS, e mais zero vírgula zero trinta e seis no Ridge.
+Temporada anterior: mais zero vírgula zero trinta e dois no OLS, e mais zero vírgula zero vinte e oito no Ridge.
+Força de tabela: mais zero vírgula zero zero sete nos dois.
+
+No OLS, o net rating tem peso negativo. Isso diria que um time com saldo melhor por posse é pior, o que não faz sentido. É o OLS compensando um coeficiente com o outro.
+O Ridge divide o peso igualmente entre as três features de pontos.
+E a força de tabela quase não pesa, porque, depois de quinze jogos, o aproveitamento dos adversários também é ruidoso.
+
+O que isso implica: o Ridge tem o mesmo erro que o OLS, mas com coeficientes que dá para interpretar e que não mudam muito se os dados mudarem um pouco. Por isso escolhemos o Ridge.
+
+### 09 — Slide 9: Simulação
+Slide nove, a simulação.
+
+O rating é a força de cada time, igual ao aproveitamento final que o Ridge prevê. Alguns exemplos, com os quinze primeiros jogos.
+San Antonio: doze a três nos quinze primeiros, saldo de mais onze vírgula dois por jogo, e rating de zero vírgula setecentos e vinte e sete, o que equivale a cerca de sessenta vitórias.
+Boston: onze a quatro, saldo de mais dez vírgula cinco, e rating de zero vírgula seiscentos e noventa e três, cerca de cinquenta e sete vitórias.
+Philadelphia: doze a três, saldo de mais dois vírgula oito, e rating de zero vírgula quinhentos e noventa e dois, cerca de quarenta e nove vitórias.
+Philadelphia e San Antonio têm a mesma campanha, mas o saldo do Philadelphia é bem menor. O modelo confia mais no saldo.
+
+Sigma, igual a zero vírgula zero oitenta e cinco, é a incerteza do rating. Em cada simulação, cada rating ganha um ruído aleatório com esse desvio-padrão. Zero vírgula zero oitenta e cinco vezes oitenta e dois dá cerca de sete vitórias: a força real de um time pode estar, tipicamente, sete vitórias acima ou abaixo do rating. Sem esse ruído, a simulação acharia que conhece a força de cada time com certeza, e os intervalos ficariam estreitos demais.
+
+A regressão logística é o modelo de jogo. Ela transforma a diferença de força na probabilidade de vitória num jogo. A fórmula é: o logit da probabilidade de vitória é igual a quatro vírgula trinta e cinco vezes a diferença entre o rating do time e o do adversário, mais zero vírgula trinta e dois vezes o mando.
+Logit é a escala que a regressão logística usa: o logaritmo natural de p dividido por um menos p. Para voltar à probabilidade, usa-se p igual a um dividido por um mais e elevado a menos o logit.
+O mando vale mais um em casa e menos um fora.
+Entre times iguais, o mandante vence cinquenta e sete vírgula nove por cento das vezes. Esse é o efeito do zero vírgula trinta e dois: a vantagem de jogar em casa.
+Um exemplo: um time com rating zero vírgula dez maior, o que equivale a umas oito vitórias por temporada, em quadra neutra. Quatro vírgula trinta e cinco vezes zero vírgula dez dá zero vírgula quatrocentos e trinta e cinco, o que corresponde a sessenta vírgula sete por cento de chance. Jogando em casa, a chance sobe para sessenta e oito por cento.
+O modelo tem acurácia de sessenta e quatro vírgula três por cento nos jogos históricos: acerta o vencedor em quase dois de cada três jogos. Basquete tem muito acaso jogo a jogo, então esse é um valor normal.
+
+Monte Carlo: em vez de calcular as probabilidades por fórmula, sorteamos a temporada inteira muitas vezes. Cada uma das dez mil simulações sorteia os novecentos e cinquenta e dois jogos restantes com as chances do modelo de jogo, soma às vitórias atuais e monta a classificação. A probabilidade de top seis de um time é a fração das dez mil simulações em que ele terminou entre os seis primeiros.
+
+Os dois jogos da NBA Cup: os jogos já marcados somam oitenta por time. Os outros dois dependem do mata-mata da NBA Cup e ainda não têm adversário. Simulamos esses jogos contra um adversário médio, em quadra neutra.
+
+As saídas da simulação são três.
+As vitórias esperadas: a média das vitórias nas dez mil simulações.
+O intervalo de oitenta por cento: do percentil dez ao percentil noventa das vitórias simuladas. Para o Philadelphia, vai de quarenta e quatro a sessenta vitórias. Quer dizer: em oitenta por cento das simulações, o Philadelphia termina nessa faixa.
+E as probabilidades de top seis, play-in e fora, que somam cem por cento para cada time.
+
+### 10 — Slide 10: Backtest
+Slide dez, o backtest.
+
+Backtest é testar o método no passado, como se estivéssemos naquele momento. Para cada uma das dezesseis temporadas, voltamos ao dia em que o último time completou quinze jogos e simulamos o resto, sem usar aquela temporada no treino. O rating, o modelo de jogo e o sigma são reajustados sem ela. Depois, comparamos com o que aconteceu de verdade.
+
+A cobertura do intervalo de oitenta por cento foi de oitenta e um por cento. Ou seja, o intervalo de oitenta por cento continha as vitórias reais em oitenta e um por cento dos quatrocentos e oitenta times-temporada.
+Se desse sessenta por cento, os intervalos seriam estreitos demais, e o modelo estaria confiante demais.
+Se desse noventa e cinco por cento, seriam largos demais, e o modelo estaria inseguro demais.
+Oitenta e um por cento, perto de oitenta, quer dizer que a incerteza está bem medida.
+
+O Brier score de três classes mede o erro das probabilidades. Para cada time, somamos, nas três classes, top seis, play-in e fora, o quadrado da diferença entre a probabilidade prevista e o resultado, em que o resultado vale um se aconteceu e zero se não aconteceu. Vai de zero, perfeito, a dois, o pior possível. Menor é melhor.
+Um exemplo: o modelo deu noventa por cento de top seis, nove por cento de play-in e um por cento de fora, e o time ficou no top seis. O Brier é zero vírgula noventa menos um, ao quadrado, mais zero vírgula zero nove ao quadrado, mais zero vírgula zero um ao quadrado, o que dá zero vírgula zero dezoito. Ótimo.
+A simulação teve Brier de zero vírgula quarenta e dois.
+A referência é zero vírgula sessenta e seis, que é o Brier de chutar sempre as proporções fixas, seis quinze avos, quatro quinze avos e cinco quinze avos, para todo time.
+O que isso implica: as probabilidades do modelo são bem melhores do que não saber nada.
+
+Calibração, que aparece num gráfico do artigo, é o seguinte: quando o modelo diz trinta por cento, o evento acontece cerca de trinta por cento das vezes. É isso que a frase acerta oitenta e um por cento quando diz oitenta resume.
+
+### 11 — Slide 11: Versões V0, V5, V10 e V15
+Slide onze, as versões V zero, V cinco, V dez e V quinze.
+
+As versões são o pipeline inteiro refeito em quatro datas da temporada 2026-2027, cada uma só com o que se sabia naquele dia.
+
+V zero, em dezenove de outubro, véspera da estreia. O modelo usa só a temporada anterior. Brier do backtest de zero vírgula quinhentos e trinta e três, erro nas vitórias finais de sete vírgula oito, e cobertura do intervalo de oitenta por cento de oitenta e sete por cento.
+
+V cinco, em dois de novembro, com os cinco primeiros jogos. Brier de zero vírgula quatrocentos e oitenta e oito, erro de sete vírgula zero vitórias, e cobertura de oitenta e um por cento.
+
+V dez, em onze de novembro, com os dez primeiros jogos. Brier de zero vírgula quatrocentos e quarenta e quatro, erro de seis vírgula zero, e cobertura de setenta e nove por cento.
+
+V quinze, em vinte e dois de novembro, com os quinze primeiros jogos. Brier de zero vírgula quatrocentos e vinte e um, erro de cinco vírgula três, e cobertura de oitenta e um por cento.
+
+O erro nas vitórias finais, aqui, é o MAE do backtest: a diferença média entre as vitórias esperadas da simulação e as vitórias reais. Ele é um pouco menor que o cinco vírgula seis do slide sete porque a simulação já soma as vitórias que o time tem no dia.
+
+O que isso implica.
+Cada bloco de cinco jogos melhora a previsão, e a melhora é maior no começo.
+Na V zero, a cobertura é de oitenta e sete por cento: os intervalos são um pouco largos, porque o modelo sabe pouco.
+A partir da V cinco, a incerteza já fica bem medida, com cobertura perto de oitenta por cento.
+
+Times que mudaram de patamar. O Memphis vinha de vinte e cinco vitórias e começou onze a quatro, com saldo forte. Ele saiu de trinta e três para quarenta e oito vitórias esperadas, e a chance de top seis foi de catorze para quarenta e oito por cento. O Toronto subiu para quarenta e nove vitórias esperadas na V cinco e caiu para trinta e oito na V quinze: um bom começo que não se sustentou. Por isso não dá para confiar numa foto só.
+
+### 12 — Slide 12: Projeção 2026-27
+Slide doze, a projeção para 2026-2027.
+
+O heatmap, ou mapa de calor, funciona assim: cada linha é um time, cada coluna uma posição final, de um a quinze, e o número é a porcentagem das simulações em que o time terminou naquela posição. A linha vermelha contínua marca o corte do top seis; a tracejada, o corte do play-in.
+
+Quatro times em destaque.
+Boston: campanha de onze a seis, cinquenta e cinco vírgula oito vitórias esperadas, intervalo de quarenta e oito a sessenta e três, noventa e sete por cento de top seis, três por cento de play-in e zero por cento de ficar fora.
+San Antonio: campanha de catorze a três, cinquenta e oito vírgula nove vitórias esperadas, intervalo de cinquenta e um a sessenta e seis, noventa e cinco por cento de top seis, cinco de play-in e zero de fora.
+Philadelphia: campanha de catorze a três, cinquenta e dois vírgula quatro vitórias esperadas, intervalo de quarenta e quatro a sessenta, noventa por cento de top seis, nove de play-in e zero de fora.
+Memphis: campanha de doze a cinco, quarenta e oito vírgula cinco vitórias esperadas, intervalo de quarenta a cinquenta e sete, quarenta e oito por cento de top seis, quarenta e seis de play-in e seis de fora.
+
+Como ler o caso do Philadelphia. A campanha de catorze a três projetaria umas sessenta e sete vitórias, se fosse mantida. O modelo projeta cinquenta e dois vírgula quatro porque o saldo de pontos, de mais dois vírgula oito por jogo, é de um time bom, não de um candidato ao título. As catorze vitórias já conquistadas contam; o que o modelo encolhe é o ritmo daqui para frente.
+
+E por que o Boston, com campanha pior que a do Philadelphia, tem chance maior? Por causa do saldo de mais dez vírgula cinco por jogo e da boa temporada anterior, com zero vírgula seiscentos e oitenta e três. O modelo entende que o Boston é mais forte do que a campanha mostra.
+
+### 13 — Slide 13: Lições
+Slide treze, as lições.
+
+Validar por temporada, sem vazamento: esse é o motivo de os números serem confiáveis.
+
+Um modelo linear simples empatou com a floresta aleatória. Com quatrocentas e oitenta observações e uma relação quase linear, como mostra o slide quatro, um modelo complexo não tem o que aprender a mais.
+
+Testar a simulação no passado: o backtest do slide dez é o que mostra que as probabilidades fazem sentido.
+
+Com cinco jogos, o erro já cai de treze vírgula três para sete vírgula dois. Isso vem da análise de sensibilidade. Com cinco jogos, manter o aproveitamento erra treze vírgula três vitórias, porque o começo é puro ruído. O Ridge erra sete vírgula dois, quase a metade. O modelo é mais útil justamente quando há menos informação.
+
+E o que fazer da próxima vez.
+Lesões, trocas e elenco: o modelo supõe que cada time segue com o elenco dos primeiros jogos. Um titular fora por um mês muda mais do que o erro médio.
+Versões de vinte, vinte e cinco e trinta jogos: continuar acompanhando a temporada.
+Rating atualizado a cada jogo: hoje, o rating usa só os quinze primeiros jogos de cada time.
+E desempates oficiais: hoje, empates na classificação são desfeitos por sorteio.
+
+### 14 — Slide 14: Para levar
+Slide catorze, a mensagem para levar.
+
+Confie na campanha, mas encolha antes. A campanha tem informação, mas precisa ser puxada para a média e combinada com o saldo de pontos e com a temporada anterior.
+
+Projeto vivo: os dados vêm direto da API da NBA. Rodando a coleta com a opção refresh current e rodando o notebook de novo, tudo é recalculado com os jogos mais recentes.
+
+Uso de IA: o código e os textos foram feitos com apoio do Claude, da Anthropic, modelo Opus, pelo Claude Code. A declaração completa está no fim do artigo.
+
+### 15 — Glossário rápido
+Para terminar, um glossário rápido, com cada termo e o valor dele no projeto.
+
+Aproveitamento: vitórias divididas por jogos. O Philadelphia, com catorze a três, tem zero vírgula oitocentos e vinte e quatro.
+Alfa: a força da penalidade do Ridge. No projeto, cem.
+Backtest: testar o método no passado, sem usar aquele ano no treino. Feito em dezesseis temporadas.
+Baseline: um modelo simples usado como régua. MAE de sete vírgula sessenta.
+Brier score: o erro das probabilidades, em que zero é perfeito e menor é melhor. Zero vírgula quarenta e dois, contra a referência de zero vírgula sessenta e seis.
+Calibração: o modelo dizer trinta por cento e o evento acontecer cerca de trinta por cento das vezes. Cobertura de oitenta e um por cento para um intervalo de oitenta.
+Coeficiente: o peso de cada feature no modelo linear. No Ridge, cerca de zero vírgula zero vinte e três nas features de pontos.
+Cobertura: a porcentagem de vezes que o resultado real caiu no intervalo. Oitenta e um por cento.
+Erro-padrão: quanto uma média varia por acaso. Zero vírgula vinte e cinco vitória.
+Feature: variável de entrada do modelo. São seis.
+Holdout temporal: treinar no passado e testar nos anos recentes. MAE de cinco vírgula trinta e cinco.
+Intervalo de oitenta por cento: a faixa entre os percentis dez e noventa das simulações. Para o Philadelphia, de quarenta e quatro a sessenta.
+Lasso: regressão com penalidade L1, que pode zerar coeficientes. MAE de cinco vírgula sessenta e oito.
+Logit: a escala de log-odds da regressão logística, o logaritmo de p sobre um menos p. Coeficiente da diferença de rating, quatro vírgula trinta e cinco; coeficiente do mando, zero vírgula trinta e dois.
+LOSO: deixar uma temporada de fora por vez. Dezesseis rodadas.
+MAE: erro absoluto médio, em vitórias. Ridge com cinco vírgula sessenta e dois.
+Monte Carlo: sortear a temporada muitas vezes e contar os resultados. Dez mil simulações.
+Multicolinearidade: features quase iguais entre si. Saldo e net rating com correlação de zero vírgula novecentos e noventa e nove.
+Net rating: saldo de pontos a cada cem posses. Philadelphia com mais dois vírgula sete.
+OLS: regressão linear por mínimos quadrados. MAE de cinco vírgula cinquenta.
+Pitagórica: o aproveitamento merecido pelos pontos. Como baseline, MAE de seis vírgula oitenta e três.
+Random Forest: a média de muitas árvores de decisão. MAE de cinco vírgula setenta e dois.
+Rating: a força prevista do time, o aproveitamento final do Ridge. San Antonio com zero vírgula setecentos e vinte e sete.
+Regra de um erro-padrão: entre modelos empatados, fique com o mais simples. Escolheu alfa igual a cem.
+Regressão à média: começos extremos voltam para perto da média. Inclinação de zero vírgula sessenta e três.
+Regressão logística: transforma a diferença de força em probabilidade. O mandante vence cinquenta e sete vírgula nove por cento entre times iguais.
+Ridge: regressão linear com penalidade L2. O modelo escolhido.
+Sigma: a incerteza do rating. Zero vírgula zero oitenta e cinco, cerca de sete vitórias.
+Spearman: se a ordem prevista bate com a real, de menos um a um. Zero vírgula setenta e oito.
+Vazamento: usar informação do futuro sem querer. Evitado com o corte no décimo quinto jogo.
+
+Fim do guia de estudo. Bons estudos e boa apresentação!
